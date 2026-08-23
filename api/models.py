@@ -20,11 +20,18 @@ class Service(models.Model):
 
 
 class Profile(models.Model):
+    class Roles(models.TextChoices):
+        customer='c','Custumer'
+        technician='t','Technician'
+        admin='a','Admin'
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     address = models.CharField(max_length=50)
     nagarita_front = models.ImageField(upload_to="nagarita/")
     nagarita_back = models.ImageField(upload_to="nagarita/")
     certificate = models.ImageField(upload_to="certificates/")
     phone_number = models.CharField(max_length=10)
+    role=models.CharField(max_length=1, choices=Roles, default='c')
+    services=models.ManyToManyField(Service,null=True,blank=True)
+
 
 

@@ -2,7 +2,7 @@ from django.urls import re_path
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-from api.views import CategoryViewSet,ServiceViewSet,TechnicianRegisterAPIView,UserProfileRetriveView
+from api.views import CategoryViewSet,ServiceViewSet,TechnicianRegisterAPIView,UserProfileRetriveView,ProfileServiceAPIView
 from rest_framework.routers import DefaultRouter
 from django.contrib import admin
 from django.urls import path
@@ -45,6 +45,11 @@ urlpatterns = [
             UserProfileRetriveView.as_view(),
             name="user-profile-view"
         ),
+         path(
+                    "profileservice/",
+                    ProfileServiceAPIView.as_view(),
+                    name="profileservice"
+                ),
 ]+router.urls
 
 if settings.DEBUG:

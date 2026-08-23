@@ -32,6 +32,7 @@ class TechnicianRegisterSerializer(serializers.Serializer):
         write_only=True
     )
 
+    role=serializers.CharField(max_length=1,min_length=1)
     address = serializers.CharField(max_length=50, min_length=10)
     nagarita_front = serializers.ImageField()
     nagarita_back = serializers.ImageField()
@@ -61,6 +62,7 @@ class TechnicianRegisterSerializer(serializers.Serializer):
         # Remove fields that don't belong to User
         confirm_password = validated_data.pop("confirm_password")
 
+        role = validated_data.pop("role")
         address = validated_data.pop("address")
         nagarita_front = validated_data.pop("nagarita_front")
         nagarita_back = validated_data.pop("nagarita_back")
@@ -82,12 +84,14 @@ class TechnicianRegisterSerializer(serializers.Serializer):
             nagarita_back=nagarita_back,
             certificate=certificate,
             phone_number=phone_number,
+            role=role
         )
 
         return user
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    services=ServiceSerializer(many=True)
     class Meta:
         model=Profile
         fields='__all__'
@@ -98,3 +102,22 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model=User
         fields=['first_name','last_name','username','email','profile']
+
+
+class ProfileServiceSerializer(serializers.Serializer):
+    profile_id = serializers.PrimaryKeyRelatedField(
+        queryset=Profile.objects.all()
+    )
+    service_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Service.objects.all(),
+        many=True
+    )
+
+    def create(self, validated_data):
+        profile_id = validated_data["profile_id"]
+        services = validated_data["service_ids"]
+
+
+        profile_id.services.set(services)
+
+        return profile_id

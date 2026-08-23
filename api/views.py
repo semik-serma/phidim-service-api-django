@@ -2,14 +2,16 @@ from rest_framework import viewsets
 from .serializers import (CategorySerializer,
                           ServiceSerializer,
                           TechnicianRegisterSerializer,
-                          UserSerializer)
+                          UserSerializer,
+                        ProfileServiceSerializer
+                          )
 from .models import Category,Service
 from rest_framework.generics import CreateAPIView,RetrieveAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.response import Response
 from django.contrib.auth.models import User
-
+from rest_framework.views import APIView
 
 # Create your views here.
 
@@ -59,3 +61,23 @@ class TechnicianRegisterAPIView(CreateAPIView):
 class UserProfileRetriveView(RetrieveAPIView):
     queryset=User.objects.all()
     serializer_class=UserSerializer
+
+
+class ProfileServiceAPIView(APIView):
+
+    def post(self, request):
+        serializer = ProfileServiceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        profile = serializer.save()
+
+        return Response(
+            {
+                "message": "Services linked to profile successfully",
+                "profile_id": profile.id,
+                "service_ids": [service.id for service in profile.services.all()]
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+
