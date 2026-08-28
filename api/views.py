@@ -1,11 +1,17 @@
-from rest_framework import viewsets
+from rest_framework import viewsets,permissions
 from .serializers import (CategorySerializer,
                           ServiceSerializer,
                           TechnicianRegisterSerializer,
                           UserSerializer,
-                        ProfileServiceSerializer
+                        ProfileServiceSerializer,
+                        ArticleSerializer,
+                        CommentSerializer,
+                        AnnouncementBannerSerializer,
+                        ReplySerializer,
+                        TotalLikesOnCommentSerializer,
+                        CrouselImagesSerializer
                           )
-from .models import Category,Service
+from .models import Category,Service,Article,Comment,AnnouncementBanner,Reply,TotalLikesonComment,CrouselImages
 from rest_framework.generics import CreateAPIView,RetrieveAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework import status
@@ -81,3 +87,31 @@ class ProfileServiceAPIView(APIView):
         )
 
 
+class ArticleModelViewSet(viewsets.ModelViewSet):
+    queryset=Article.objects.all()
+    serializer_class=ArticleSerializer
+
+
+class CommentModelViewSet(viewsets.ModelViewSet):
+    queryset=Comment.objects.all()
+    serializer_class=CommentSerializer
+
+
+class AnnouncementBannerViewSet(viewsets.ModelViewSet):
+    queryset=AnnouncementBanner.objects.all()
+    serializer_class=AnnouncementBannerSerializer
+
+
+class ReplyViewSet(viewsets.ModelViewSet):
+    queryset=Reply.objects.all()
+    serializer_class=ReplySerializer
+
+
+class LikesOnCommentViewSet(viewsets.ModelViewSet):
+    queryset=TotalLikesonComment.objects.all()
+    serializer_class=TotalLikesOnCommentSerializer
+
+
+class CrouselImagesViewSet(viewsets.ModelViewSet):
+    queryset=CrouselImages.objects.all()
+    serializer_class=CrouselImagesSerializer

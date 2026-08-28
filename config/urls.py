@@ -2,7 +2,18 @@ from django.urls import re_path
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-from api.views import CategoryViewSet,ServiceViewSet,TechnicianRegisterAPIView,UserProfileRetriveView,ProfileServiceAPIView
+from api.views import (CategoryViewSet,
+                       ServiceViewSet,
+                       TechnicianRegisterAPIView,
+                       UserProfileRetriveView,
+                       ProfileServiceAPIView,
+                       ArticleModelViewSet,
+                       CommentModelViewSet,
+                       AnnouncementBannerViewSet,
+                       ReplyViewSet,
+                       LikesOnCommentViewSet,
+                       CrouselImagesViewSet
+                       )
 from rest_framework.routers import DefaultRouter
 from django.contrib import admin
 from django.urls import path
@@ -25,9 +36,12 @@ schema_view = get_schema_view(
 router = DefaultRouter()
 router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'services', ServiceViewSet, basename='service')
-
-
-
+router.register(r'articles', ArticleModelViewSet, basename='article')
+router.register(r'comments', CommentModelViewSet, basename='comment')
+router.register(r'announcements', AnnouncementBannerViewSet, basename='announcement')
+router.register(r'replies',ReplyViewSet,basename='reply')
+router.register(r'likes',LikesOnCommentViewSet,basename='like')
+router.register(r'crousel-images',CrouselImagesViewSet,basename='crousel-image')
 
 
 urlpatterns = [

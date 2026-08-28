@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category,Service
+from .models import Category,Service,Article,Comment,AnnouncementBanner,Reply,TotalLikesonComment,CrouselImages
 from django.db import transaction
 from .models import Profile
 from django.contrib.auth.models import User
@@ -121,3 +121,63 @@ class ProfileServiceSerializer(serializers.Serializer):
         profile_id.services.set(services)
 
         return profile_id
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Comment
+        fields='__all__'
+        read_only_fields=["created_at","updated_at"]
+
+
+class ArticleSerializer(serializers.ModelSerializer):
+    comments=CommentSerializer(many=True)
+    class Meta:
+        model=Article
+        fields='__all__'
+        read_only_fields=["created_at","updated_at"]
+
+
+class AnnouncementBannerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=AnnouncementBanner
+        fields='__all__'
+        ready_only_fields=["created_at","updated_at"]
+
+
+class ReplyProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Profile
+        fields=['id','rating','address','nagarita_front','nagarita_back','certificate','phone_number','role']
+
+
+class ReplyUserSerializer(serializers.ModelSerializer):
+    profile=ReplyProfileSerializer()
+    class Meta:
+        model=User
+        fields=['id','first_name','last_name','username','email','profile']
+
+
+class ReplySerializer(serializers.ModelSerializer):
+    article=ArticleSerializer()
+    user=ReplyUserSerializer()
+    comment=CommentSerializer()
+    class Meta:
+        model=Reply
+        fields='__all__'
+        read_only_fields=["created_at"]
+
+
+class TotalLikesOnCommentSerializer(serializers.ModelSerializer):
+    comment = CommentSerializer()
+    class Meta:
+        model = TotalLikesonComment
+        fields = "__all__"
+        read_only_fields = ["created_at", "likes"]
+
+
+class CrouselImagesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=CrouselImages
+        fields='__all__'
+        ready_only_fields=["created_at","updated_at"]
