@@ -1,8 +1,7 @@
 from rest_framework import serializers
 from .models import Category,Service,Article,Comment,AnnouncementBanner,Reply,TotalLikesonComment,CrouselImages
 from django.db import transaction
-from .models import Profile
-from django.contrib.auth.models import User
+from .models import Profile,CustomUser
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,7 +18,6 @@ class ServiceSerializer(serializers.ModelSerializer):
 class TechnicianRegisterSerializer(serializers.Serializer):
     first_name = serializers.CharField(min_length=3)
     last_name = serializers.CharField(min_length=3)
-    username = serializers.CharField(max_length=20, min_length=8)
     email = serializers.EmailField()
     password = serializers.CharField(
         max_length=20,
@@ -32,20 +30,15 @@ class TechnicianRegisterSerializer(serializers.Serializer):
         write_only=True
     )
 
-    role=serializers.CharField(max_length=1,min_length=1)
     address = serializers.CharField(max_length=50, min_length=10)
     nagarita_front = serializers.ImageField()
     nagarita_back = serializers.ImageField()
     certificate = serializers.ImageField()
     phone_number = serializers.CharField(max_length=10, min_length=10)
 
-    def validate_username(self, value):
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("Username already exists.")
-        return value
 
     def validate_email(self, value):
-        if User.objects.filter(email__iexact=value).exists():
+        if CustomUser.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("Email already exists.")
         return value
 
@@ -59,19 +52,19 @@ class TechnicianRegisterSerializer(serializers.Serializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        # Remove fields that don't belong to User
+        # Remove fields that don't belong to CustomUser
         confirm_password = validated_data.pop("confirm_password")
 
-        role = validated_data.pop("role")
+        role = CustomUser.Role.TECHNICIAN
         address = validated_data.pop("address")
         nagarita_front = validated_data.pop("nagarita_front")
         nagarita_back = validated_data.pop("nagarita_back")
         certificate = validated_data.pop("certificate")
         phone_number = validated_data.pop("phone_number")
 
-        user = User.objects.create_user(
-            username=validated_data["username"],
+        user = CustomUser.objects.create_user(
             email=validated_data["email"],
+            role=role,
             password=validated_data["password"],
             first_name=validated_data["first_name"],
             last_name=validated_data["last_name"],
@@ -98,10 +91,20 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    profile=ProfileSerializer()
+
+    profile = ProfileSerializer()
+
     class Meta:
-        model=User
-        fields=['first_name','last_name','username','email','profile']
+        model = CustomUser
+        fields = [
+            'first_name',
+            'last_name',
+            'email',
+            'role',
+            'address',
+            'phone_number',
+            'profile'
+        ]
 
 
 class ProfileServiceSerializer(serializers.Serializer):
@@ -154,8 +157,8 @@ class ReplyProfileSerializer(serializers.ModelSerializer):
 class ReplyUserSerializer(serializers.ModelSerializer):
     profile=ReplyProfileSerializer()
     class Meta:
-        model=User
-        fields=['id','first_name','last_name','username','email','profile']
+        model=CustomUser
+        fields=['id','first_name','last_name','email','profile']
 
 
 class ReplySerializer(serializers.ModelSerializer):

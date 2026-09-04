@@ -133,3 +133,4 @@ MAILERS = {
 MEDIA_ROOT='media/'
 MEDIA_URL = "media/"
 GEOIP_PATH = BASE_DIR / "geoip"
+AUTH_USER_MODEL = "api.CustomUser"

@@ -16,7 +16,7 @@ from rest_framework.generics import CreateAPIView,RetrieveAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.response import Response
-from django.contrib.auth.models import User
+from .models import CustomUser
 from rest_framework.views import APIView
 
 # Create your views here.
@@ -54,7 +54,6 @@ class TechnicianRegisterAPIView(CreateAPIView):
                 "message": "Technician registered successfully.",
                 "user": {
                     "id": user.id,
-                    "username": user.username,
                     "firstname": user.first_name,
                     "lastname": user.last_name,
                     "email": user.email,
@@ -65,7 +64,7 @@ class TechnicianRegisterAPIView(CreateAPIView):
 
 
 class UserProfileRetriveView(RetrieveAPIView):
-    queryset=User.objects.all()
+    queryset=CustomUser.objects.all()
     serializer_class=UserSerializer
 
 
