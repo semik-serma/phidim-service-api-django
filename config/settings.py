@@ -134,3 +134,9 @@ MEDIA_ROOT='media/'
 MEDIA_URL = "media/"
 GEOIP_PATH = BASE_DIR / "geoip"
 AUTH_USER_MODEL = "api.CustomUser"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}

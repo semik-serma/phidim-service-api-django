@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Category,Service,Article,Comment,AnnouncementBanner,Reply,TotalLikesonComment,CrouselImages
+from django.contrib.auth import authenticate
 from django.db import transaction
 from .models import Profile,CustomUser
 
@@ -83,6 +84,39 @@ class TechnicianRegisterSerializer(serializers.Serializer):
         return user
 
 
+class LoginSerializer(serializers.Serializer):
+
+    email = serializers.EmailField()
+
+    password = serializers.CharField(
+        write_only=True,
+        min_length=8
+    )
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        password = attrs.get("password")
+
+        user = authenticate(
+            email=email,
+            password=password
+        )
+
+        if user is None:
+            raise serializers.ValidationError(
+                "Invalid email or password."
+            )
+
+        if not user.is_active:
+            raise serializers.ValidationError(
+                "This account is inactive."
+            )
+
+        attrs["user"] = user
+
+        return attrs
+
+
 class ProfileSerializer(serializers.ModelSerializer):
     services=ServiceSerializer(many=True)
     class Meta:
@@ -108,22 +142,24 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileServiceSerializer(serializers.Serializer):
-    profile_id = serializers.PrimaryKeyRelatedField(
-        queryset=Profile.objects.all()
-    )
+
     service_ids = serializers.PrimaryKeyRelatedField(
         queryset=Service.objects.all(),
         many=True
     )
 
     def create(self, validated_data):
-        profile_id = validated_data["profile_id"]
         services = validated_data["service_ids"]
 
+        # Get the logged-in user's profile
+        profile = self.context["request"].user.profile
 
-        profile_id.services.set(services)
+        # Link services to the profile
+        profile.services.add(*services)
 
-        return profile_id
+        return profile
+
+
 
 
 class CommentSerializer(serializers.ModelSerializer):

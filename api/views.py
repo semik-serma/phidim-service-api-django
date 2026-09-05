@@ -13,7 +13,7 @@ from .serializers import (CategorySerializer,
                           )
 from .models import Category,Service,Article,Comment,AnnouncementBanner,Reply,TotalLikesonComment,CrouselImages
 from rest_framework.generics import CreateAPIView,RetrieveAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
 from .models import CustomUser
@@ -63,15 +63,28 @@ class TechnicianRegisterAPIView(CreateAPIView):
         )
 
 
-class UserProfileRetriveView(RetrieveAPIView):
-    queryset=CustomUser.objects.all()
-    serializer_class=UserSerializer
+
+
+
+class UserProfileRetrieveView(RetrieveAPIView):
+
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
 
 
 class ProfileServiceAPIView(APIView):
 
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
-        serializer = ProfileServiceSerializer(data=request.data)
+        serializer = ProfileServiceSerializer(
+            data=request.data,
+            context={"request": request}
+        )
+
         serializer.is_valid(raise_exception=True)
 
         profile = serializer.save()
@@ -80,10 +93,15 @@ class ProfileServiceAPIView(APIView):
             {
                 "message": "Services linked to profile successfully",
                 "profile_id": profile.id,
-                "service_ids": [service.id for service in profile.services.all()]
+                "service_ids": [
+                    service.id
+                    for service in profile.services.all()
+                ]
             },
             status=status.HTTP_201_CREATED
         )
+
+
 
 
 class ArticleModelViewSet(viewsets.ModelViewSet):

@@ -119,6 +119,10 @@ class Service(models.Model):
     description=models.TextField()
     category=models.ForeignKey(Category, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.name
+        
+
 
 class Profile(models.Model):
     class Roles(models.TextChoices):
@@ -140,6 +144,9 @@ class Profile(models.Model):
     phone_number = models.CharField(max_length=10)
     role=models.CharField(max_length=1, choices=Roles, default='c')
     services=models.ManyToManyField(Service)
+
+    def __str__(self):
+        return self.user.email
 
 
 class Article(models.Model):
