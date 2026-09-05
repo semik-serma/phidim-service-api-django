@@ -63,9 +63,6 @@ class TechnicianRegisterAPIView(CreateAPIView):
         )
 
 
-
-
-
 class UserProfileRetrieveView(RetrieveAPIView):
 
     serializer_class = UserSerializer
@@ -102,8 +99,6 @@ class ProfileServiceAPIView(APIView):
         )
 
 
-
-
 class ArticleModelViewSet(viewsets.ModelViewSet):
     queryset=Article.objects.all()
     serializer_class=ArticleSerializer
@@ -132,3 +127,19 @@ class LikesOnCommentViewSet(viewsets.ModelViewSet):
 class CrouselImagesViewSet(viewsets.ModelViewSet):
     queryset=CrouselImages.objects.all()
     serializer_class=CrouselImagesSerializer
+
+
+class TechnicianListingView(APIView):
+    def get(self, request, *args, **kwargs):
+        print(request.GET)
+        technicians = CustomUser.objects.filter(role=CustomUser.Role.TECHNICIAN)
+        category_id = request.GET.get('category')
+        if category_id:
+            category = Category.objects.get(pk=category_id)
+            technicians = technicians.filter(profile__services__category=category)
+
+        serializer = UserSerializer(
+            instance=technicians,
+            many=True
+        )
+        return Response(serializer.data,status=status.HTTP_200_OK)

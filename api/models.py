@@ -129,7 +129,7 @@ class Profile(models.Model):
         customer='c','Custumer'
         technician='t','Technician'
         admin='a','Admin'
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE,related_name='profile')
     rating = models.PositiveSmallIntegerField(
     default=0,
     validators=[
