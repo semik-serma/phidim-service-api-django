@@ -201,6 +201,32 @@ class CrouselImages(models.Model):
     updated_at=models.DateTimeField(auto_now=True)
 
 
+class Booking(models.Model):
+    technician = models.ForeignKey(CustomUser,on_delete=models.CASCADE,related_name='bookings')
+    customer = models.ForeignKey(CustomUser,on_delete=models.SET_NULL,null=True,related_name='customer_bookings')
+    latitude = models.DecimalField(
+        max_digits=9, 
+        decimal_places=7, 
+        null=True, 
+        blank=True
+    )
+    
+    # Longitude: Max 180.0000000, min -180.0000000 (3 integer digits + 7 decimal digits)
+    longitude = models.DecimalField(
+        max_digits=10, 
+        decimal_places=7, 
+        null=True, 
+        blank=True
+    )
+    date = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    problem_details = models.TextField()
+
+    def __str__(self):
+        return f"{self.customer.email}=>{self.technician.email}"
+
+
 
 
 

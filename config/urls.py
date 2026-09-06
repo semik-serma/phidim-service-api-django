@@ -43,6 +43,8 @@ router.register(r'likes', views.LikesOnCommentViewSet, basename='like')
 
 router.register(r'crousel-images', views.CrouselImagesViewSet, basename='crousel-image')
 
+router.register(r'bookings', views.BookingViewSet, basename='bookings')
+
 
 urlpatterns = [
 

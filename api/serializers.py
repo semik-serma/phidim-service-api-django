@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category,Service,Article,Comment,AnnouncementBanner,Reply,TotalLikesonComment,CrouselImages
+from .models import *
 from django.contrib.auth import authenticate
 from django.db import transaction
 from .models import Profile,CustomUser
@@ -220,3 +220,61 @@ class CrouselImagesSerializer(serializers.ModelSerializer):
         model=CrouselImages
         fields='__all__'
         ready_only_fields=["created_at","updated_at"]
+
+
+class CustomUserMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=CustomUser
+        fields=['first_name','last_name']
+
+
+class BookingsListingSerializer(serializers.ModelSerializer):
+    technician = CustomUserMiniSerializer(read_only=True)
+    customer = CustomUserMiniSerializer(read_only=True)
+    class Meta:
+        model=Booking
+        fields='__all__'
+        read_only_fields=["created_at","updated_at"]
+
+
+class BookingSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Booking
+        fields = "__all__"
+        read_only_fields = [
+            "created_at",
+            "updated_at",
+            "customer",
+        ]
+
+    def validate_technician(self, technician):
+        # Make sure the selected user is actually a technician
+        if technician.role != CustomUser.Role.TECHNICIAN:
+            raise serializers.ValidationError(
+                "The selected user is not a technician."
+            )
+
+        return technician
+
+    def create(self, validated_data):
+        # Get the logged-in user
+        customer = self.context["request"].user
+
+        # Make sure the logged-in user is actually a customer
+        if customer.role != CustomUser.Role.CUSTOMER:
+            raise serializers.ValidationError(
+                "Only a customer can create a booking."
+            )
+
+        # Create booking with logged-in user as customer
+        booking = Booking.objects.create(
+            customer=customer,
+            **validated_data
+        )
+
+        return booking
+
+
+
+# class BookingListingSerializer(serializers.ModelSerializer):

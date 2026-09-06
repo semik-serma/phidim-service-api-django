@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category,Service,Profile,Article,Comment,Reply,TotalLikesonComment,CrouselImages
+from .models import *
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import CustomUser
@@ -73,3 +73,4 @@ admin.site.register(Comment)
 admin.site.register(Reply)
 admin.site.register(TotalLikesonComment)
 admin.site.register(CrouselImages)
+admin.site.register(Booking)
