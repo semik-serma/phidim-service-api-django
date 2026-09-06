@@ -103,6 +103,12 @@ urlpatterns = [
         views.TechnicianListingView.as_view(),
         name="technicians"
     )
+    ,
+    path(
+        "home-views/",
+        views.HomeViewCountView.as_view(),
+        name="home-views"
+    ),
 
 ] + router.urls
 

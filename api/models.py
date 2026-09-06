@@ -228,7 +228,20 @@ class Booking(models.Model):
 
 
 
+class SiteStats(models.Model):
+    view_count = models.PositiveBigIntegerField(default=0)
 
+    @property
+    def formatted_views(self):
+        count = self.view_count
+
+        if count >= 1_000_000:
+            return f"{count / 1_000_000:.1f}".rstrip("0").rstrip(".") + "M"
+
+        if count >= 1_000:
+            return f"{count / 1_000:.1f}".rstrip("0").rstrip(".") + "K"
+
+        return str(count)
 
 
 

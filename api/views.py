@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from .models import CustomUser
 from rest_framework.views import APIView
+from django.db.models import F
 
 # Create your views here.
 
@@ -143,3 +144,25 @@ class BookingViewSet(viewsets.ModelViewSet):
             return BookingsListingSerializer
 
         return BookingSerializer
+
+
+class HomeViewCountView(APIView):
+
+    def post(self, request):
+
+        stats, created = SiteStats.objects.get_or_create(
+            id=1,
+            defaults={"view_count": 0}
+        )
+
+        SiteStats.objects.filter(
+            id=stats.id
+        ).update(
+            view_count=F("view_count") + 1
+        )
+
+        stats.refresh_from_db()
+
+        serializer = SiteStatsSerializer(stats)
+
+        return Response(serializer.data)

@@ -278,3 +278,17 @@ class BookingSerializer(serializers.ModelSerializer):
 
 
 # class BookingListingSerializer(serializers.ModelSerializer):
+
+
+class SiteStatsSerializer(serializers.ModelSerializer):
+    formatted_views = serializers.CharField(
+        source="formatted_views",
+        read_only=True
+    )
+
+    class Meta:
+        model = SiteStats
+        fields = [
+            "view_count",
+            "formatted_views",
+        ]
