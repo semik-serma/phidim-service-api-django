@@ -232,7 +232,27 @@ class ProblemImageViewSet(viewsets.ModelViewSet):
         serializer.save()
 
 
+class TechnicianBookingStatusUpdate(APIView):
+    permission_classes=[IsAuthenticated]
+    def patch(self, request, *args, **kwargs):
+        if request.user.role != CustomUser.Role.TECHNICIAN:
+            raise PermissionDenied(
+                "only technicians can accept or reject "
+            )
+        serializer = TechnicianBookingUpdateSerializer(
+            data=request.data
+        )
 
+
+        serializer.is_valid(raise_exception=True)
+
+        booking = serializer.save()
+
+        return Response({
+            "message": "Booking status updated successfully.",
+            "booking": booking.id,
+            "status": booking.status,
+        })
 
 
 

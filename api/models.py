@@ -211,6 +211,13 @@ class CrouselImages(models.Model):
 
 
 class Booking(models.Model):
+
+    class STATUS(models.TextChoices):
+        PENDING = 'p','pending'
+        CONFIRMED = 'c','confirmed'
+        REJECTED = 'r','rejected'
+
+    status = models.CharField(max_length=1,choices=STATUS,default=STATUS.PENDING)
     technician = models.ForeignKey(CustomUser,on_delete=models.CASCADE,related_name='bookings')
     customer = models.ForeignKey(CustomUser,on_delete=models.SET_NULL,null=True,related_name='customer_bookings')
     latitude = models.DecimalField(
@@ -219,6 +226,7 @@ class Booking(models.Model):
         null=True, 
         blank=True
     )
+
     
     # Longitude: Max 180.0000000, min -180.0000000 (3 integer digits + 7 decimal digits)
     longitude = models.DecimalField(
