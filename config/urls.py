@@ -45,6 +45,8 @@ router.register(r'crousel-images', views.CrouselImagesViewSet, basename='crousel
 
 router.register(r'bookings', views.BookingViewSet, basename='bookings')
 
+router.register(r'technicians-problem-images', views.ProblemImageViewSet, basename='technicians-problem-image')
+
 
 urlpatterns = [
 

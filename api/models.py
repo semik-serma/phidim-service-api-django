@@ -3,6 +3,15 @@ from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator,MinLengthValidator, MaxLengthValidator
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from django.core.exceptions import ValidationError
+
+
+max_file_size=5 #5MB
+
+def validate_file_size(value):
+    limit = max_file_size * 1024 * 1024 # 5 MB
+    if value.size > limit:
+        raise ValidationError(f"File too large. Size should not exceed {max_file_size} MB.")
 
 
 class CustomUserManager(BaseUserManager):
@@ -228,23 +237,18 @@ class Booking(models.Model):
 
 
 
-class SiteStats(models.Model):
-    view_count = models.PositiveBigIntegerField(default=0)
+class ProblemImage(models.Model):
+    booking=models.ForeignKey(Booking,on_delete=models.CASCADE,related_name='problem_images',null=True)
+    picture = models.ImageField(
+        upload_to="products/",
+        validators=[validate_file_size],
+        null=True,
+        blank=True
+    )
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
 
-    @property
-    def formatted_views(self):
-        count = self.view_count
-
-        if count >= 1_000_000:
-            return f"{count / 1_000_000:.1f}".rstrip("0").rstrip(".") + "M"
-
-        if count >= 1_000:
-            return f"{count / 1_000:.1f}".rstrip("0").rstrip(".") + "K"
-
-        return str(count)
-
-
-
-
+    def __str__(self):
+        return self.booking
 
 

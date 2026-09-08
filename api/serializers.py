@@ -227,14 +227,19 @@ class CustomUserMiniSerializer(serializers.ModelSerializer):
         model=CustomUser
         fields=['first_name','last_name']
 
+class ProblemImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=ProblemImage
+        fields='__all__'
 
 class BookingsListingSerializer(serializers.ModelSerializer):
     technician = CustomUserMiniSerializer(read_only=True)
     customer = CustomUserMiniSerializer(read_only=True)
+    problem_images=ProblemImageSerializer(many=True)
     class Meta:
         model=Booking
         fields='__all__'
-        read_only_fields=["created_at","updated_at"]
+        read_only_fields=["created_at","updated_at","problem_images"]
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -280,15 +285,27 @@ class BookingSerializer(serializers.ModelSerializer):
 # class BookingListingSerializer(serializers.ModelSerializer):
 
 
-class SiteStatsSerializer(serializers.ModelSerializer):
-    formatted_views = serializers.CharField(
-        source="formatted_views",
-        read_only=True
-    )
+
+
+class ProblemImageSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = SiteStats
-        fields = [
-            "view_count",
-            "formatted_views",
-        ]
+        model = ProblemImage
+        fields = "__all__"
+        read_only_fields = ["created_at", "updated_at"]
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+
+        if not user.is_authenticated:
+            raise serializers.ValidationError(
+                "Authentication is required."
+            )
+
+        if user.role != CustomUser.Role.CUSTOMER:
+            raise serializers.ValidationError(
+                "Only customer can upload problem images."
+            )
+
+        return attrs
+
