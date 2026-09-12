@@ -140,3 +140,42 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
 }
+
+
+# MAILERS = {
+#     "default": {
+#         "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+#         "OPTIONS": {
+#             "host": "smtp.gmail.com",
+#             "port": 587,
+#             "username": "semikserma@gmail.com",
+#             "password": "xxwfzeykgoyhifbz",
+#             "use_tls": True,
+#         },
+#     },
+# }
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = "semikserma@gmail.com"
+EMAIL_HOST_PASSWORD = "xxwfzeykgoyhifbz"
+
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+
+DEFAULT_FROM_EMAIL = "semikserma@gmail.com"
+
+CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
+
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+CELERY_TIMEZONE = "Asia/Kathmandu"
+CELERY_ENABLE_UTC = True
