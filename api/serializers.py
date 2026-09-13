@@ -3,6 +3,9 @@ from .models import *
 from django.contrib.auth import authenticate
 from django.db import transaction
 from .models import Profile,CustomUser
+from django.core.mail import send_mail
+from django.conf import settings
+from api.tasks import send_status_email_task
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -311,10 +314,7 @@ class BookingSerializer(serializers.ModelSerializer):
 # class BookingListingSerializer(serializers.ModelSerializer):
 
 
-
-
 class TechnicianBookingUpdateSerializer(serializers.Serializer):
-
     booking = serializers.PrimaryKeyRelatedField(
         queryset=Booking.objects.all()
     )
@@ -325,38 +325,97 @@ class TechnicianBookingUpdateSerializer(serializers.Serializer):
         booking = attrs["booking"]
         new_status = attrs["status"]
 
-        if booking.status==new_status:
+        if booking.status == new_status:
             raise serializers.ValidationError(
-                "already in same status "
+                "Booking is already in the same status."
             )
-        # Once a booking is confirmed, it cannot be changed again.
-        if booking.status in [Booking.STATUS.CONFIRMED,Booking.STATUS.REJECTED]:
+
+        if booking.status in [
+            Booking.STATUS.CONFIRMED,
+            Booking.STATUS.REJECTED,
+        ]:
             raise serializers.ValidationError(
                 "A confirmed or rejected booking cannot be updated."
             )
 
-        # Get the actual choices from the Booking model.
         allowed_statuses = {
-            choice[0]
-            for choice in Booking.STATUS.choices
-            if choice[0] != Booking.STATUS.PENDING
+            Booking.STATUS.CONFIRMED,
+            Booking.STATUS.REJECTED,
         }
 
-        # This prevents changing the booking back to Pending
-        # and only allows the other available statuses.
         if new_status not in allowed_statuses:
             raise serializers.ValidationError(
-                "Booking can only be updated to a non-pending status."
+                "Booking can only be updated to confirmed or rejected."
             )
-
-        attrs["status"] = new_status
 
         return attrs
 
     def create(self, validated_data):
         booking = validated_data["booking"]
-        booking.status = validated_data["status"]
-        booking.save()
+        new_status = validated_data["status"]
+
+        booking.status = new_status
+        booking.save(update_fields=["status", "updated_at"])
+
+        print("===================================")
+        print("BOOKING UPDATED")
+        print("Booking ID:", booking.id)
+        print("Status:", booking.status)
+        print("Customer:", booking.customer)
+        print("Customer email:", booking.customer.email if booking.customer else None)
+        print("Technician email:", booking.technician.email)
+        print("===================================")
+
+        self.send_status_email(booking)
+        
 
         return booking
+
+    def send_status_email(self,booking):
+        if not booking.customer:
+            print("EMAIL NOT SENT: customer is None")
+            return
+
+        customer_email = booking.customer.email
+
+        if not customer_email:
+            print("EMAIL NOT SENT: customer has no email")
+            return
+
+        print("Sending email to:", customer_email)
+
+        if booking.status == Booking.STATUS.CONFIRMED:
+
+            subject = "Your booking has been accepted"
+
+            message = (
+                f"Your booking #{booking.id} has been accepted "
+                f"by technician {booking.technician.email}.\n\n"
+                f"Problem details: {booking.problem_details}\n"
+                f"Booking date: {booking.date}\n\n"
+                "Thank you for using our service."
+            )
+
+        elif booking.status == Booking.STATUS.REJECTED:
+
+            subject = "Your booking has been rejected"
+
+            message = (
+                f"Unfortunately, your booking #{booking.id} has been "
+                f"rejected by technician {booking.technician.email}.\n\n"
+                f"Problem details: {booking.problem_details}\n"
+                f"Booking date: {booking.date}\n\n"
+                "Please try booking another technician."
+            )
+
+        else:
+            print("EMAIL NOT SENT: unsupported status")
+            return
+
+        print("Subject:", subject)
+        print("From:", settings.DEFAULT_FROM_EMAIL)
+        print("To:", customer_email)
+        send_status_email_task.delay(subject=subject,message=message,customer_email=customer_email)
+
+    
 
