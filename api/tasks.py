@@ -15,3 +15,14 @@ def send_status_email_task(subject,message,customer_email):
         )
 
         print("EMAIL SENT SUCCESSFULLY")
+
+
+@shared_task
+def clear_rejected_bookings():
+    selected_bookings = Booking.objects.filter(status=Booking.STATUS.REJECTED)
+    customer_emails = {booking.customer.email for booking in selected_bookings}
+    print(customer_emails)
+    
+    deleted_count, _=Booking.objects.filter(status=Booking.STATUS.REJECTED).delete()
+    print(f"{deleted_count} were deleted")
+    print(_)
