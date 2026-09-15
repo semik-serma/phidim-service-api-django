@@ -260,3 +260,309 @@ class ProblemImage(models.Model):
         return self.booking
 
 
+# ============================================================
+# CHAT MODELS
+# ============================================================
+
+class Conversation(models.Model):
+    """
+    Represents either:
+    - a 1-to-1 conversation
+    - a group conversation
+    """
+
+    name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    is_group = models.BooleanField(
+        default=False
+    )
+
+    # Used only for 1-to-1 conversations.
+    # Example: direct:4:12
+    direct_key = models.CharField(
+        max_length=100,
+        unique=True,
+        blank=True,
+        null=True
+    )
+
+    created_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="created_conversations"
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        if self.is_group:
+            return self.name or f"Group {self.id}"
+
+        return f"Conversation {self.id}"
+
+
+class ConversationParticipant(models.Model):
+    """
+    Users who belong to a conversation.
+    """
+
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.CASCADE,
+        related_name="participants"
+    )
+
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="chat_conversations"
+    )
+
+    joined_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["conversation", "user"],
+                name="unique_chat_participant"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} -> Conversation {self.conversation.id}"
+
+
+class ChatAttachment(models.Model):
+    """
+    Files/images attached to chat messages.
+
+    Maximum size: less than 5 MB.
+    """
+
+    file = models.FileField(
+        upload_to="chat/attachments/",
+        validators=[validate_file_size]
+    )
+
+    original_name = models.CharField(
+        max_length=255
+    )
+
+    size = models.PositiveIntegerField()
+
+    uploaded_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="chat_attachments"
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    def __str__(self):
+        return self.original_name
+
+
+class ChatMessage(models.Model):
+    """
+    A single message in a conversation.
+    """
+
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.CASCADE,
+        related_name="messages"
+    )
+
+    sender = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="sent_chat_messages"
+    )
+
+    content = models.TextField(
+        blank=True
+    )
+
+    attachment = models.ForeignKey(
+        ChatAttachment,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="message"
+    )
+
+    is_deleted = models.BooleanField(
+        default=False
+    )
+
+    edited_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        ordering = ["created_at"]
+
+        indexes = [
+            models.Index(
+                fields=["conversation", "-created_at"]
+            ),
+            models.Index(
+                fields=["sender", "-created_at"]
+            ),
+        ]
+
+    def __str__(self):
+        return f"Message {self.id} - {self.sender.email}"
+
+
+class MessageReadReceipt(models.Model):
+    """
+    Tracks which users have read which messages.
+    """
+
+    message = models.ForeignKey(
+        ChatMessage,
+        on_delete=models.CASCADE,
+        related_name="read_receipts"
+    )
+
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="chat_read_receipts"
+    )
+
+    read_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["message", "user"],
+                name="unique_message_read_receipt"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} read Message {self.message.id}"
+
+
+class ChatPresence(models.Model):
+    """
+    Tracks online/offline state and last seen.
+    """
+
+    user = models.OneToOneField(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="chat_presence"
+    )
+
+    is_online = models.BooleanField(
+        default=False
+    )
+
+    active_connections = models.PositiveIntegerField(
+        default=0
+    )
+
+    last_seen = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+    def __str__(self):
+        status = "Online" if self.is_online else "Offline"
+        return f"{self.user.email} - {status}"
+
+
+class ChatNotification(models.Model):
+    """
+    Notification generated by chat activity.
+    """
+
+    NOTIFICATION_TYPES = (
+        ("message", "New Message"),
+        ("mention", "Mention"),
+        ("group", "Group Activity"),
+    )
+
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="chat_notifications"
+    )
+
+    notification_type = models.CharField(
+        max_length=30,
+        choices=NOTIFICATION_TYPES,
+        default="message"
+    )
+
+    text = models.TextField()
+
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="chat_notifications"
+    )
+
+    message = models.ForeignKey(
+        ChatMessage,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="chat_notifications"
+    )
+
+    is_read = models.BooleanField(
+        default=False
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+        indexes = [
+            models.Index(
+                fields=["user", "is_read"]
+            ),
+            models.Index(
+                fields=["user", "-created_at"]
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} - {self.notification_type}"
