@@ -200,9 +200,40 @@ class UpdateHeroViewSet(viewsets.ModelViewSet):
     serializer_class = UpdateHeroSerializer
 
 
+class OtpVerifyView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        serializer = OtpVerifySerializer(
+            data=request.data,
+            context={"request": request}
+        )
 
+        if serializer.is_valid():
+            request.user.is_verified = True
+            request.user.save()
+            print(request.user,request.user.is_verified,request.user.email)
+            return Response(
+                {
+                    "message": "OTP verified successfully.User Account Verified"
+                },
+                status=status.HTTP_200_OK
+            )
 
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
+class EmailVerifyRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self,request):
+        send_otp_for_email_verification.delay(request.user.id)
+        return Response(
+                {
+                    "message": "OTP sent successfully."
+                },
+                status=status.HTTP_200_OK
+            )
 
 
 

@@ -106,7 +106,17 @@ urlpatterns = [
         views.TechnicianListingView.as_view(),
         name="technicians"
     )
-    
+    ,
+    path(
+        "otp/verify/",
+        views.OtpVerifyView.as_view(),
+        name="otp-verification"
+    ),
+    path(
+        "otp/resend/",
+        views.EmailVerifyRequestView.as_view(),
+        name="otp-resend"
+    )
 
 ] + router.urls
 

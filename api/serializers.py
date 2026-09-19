@@ -143,7 +143,8 @@ class UserSerializer(serializers.ModelSerializer):
             'role',
             'address',
             'phone_number',
-            'profile'
+            'profile',
+            'is_verified'
         ]
 
 
@@ -193,7 +194,7 @@ class AnnouncementBannerSerializer(serializers.ModelSerializer):
 class ReplyProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model=Profile
-        fields=['id','rating','address','nagarita_front','nagarita_back','certificate','phone_number','role']
+        fields=['id','rating','address','nagarita_front','nagarita_back','certificate','phone_number']
 
 
 class ReplyUserSerializer(serializers.ModelSerializer):
@@ -426,3 +427,24 @@ class UpdateHeroSerializer(serializers.ModelSerializer):
         model = UpdateHero
         fields = '__all__'
         
+
+class OtpVerifySerializer(serializers.Serializer):
+    otp_value = serializers.CharField(max_length=6)
+
+    def validate_otp_value(self, value):
+        user = self.context["request"].user
+
+        try:
+            otp = OTP.objects.get(
+                user=user,
+                otp_value=value
+            )
+        except OTP.DoesNotExist:
+            raise serializers.ValidationError("Invalid OTP.")
+
+        if otp.is_expired:
+            raise serializers.ValidationError("OTP has expired.")
+
+        otp.delete()
+
+        return value

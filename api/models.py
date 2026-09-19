@@ -4,9 +4,10 @@ from django.core.validators import MinValueValidator, MaxValueValidator,MinLengt
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.core.exceptions import ValidationError
-from .utils import generate_otp
+from .utils import generate_otp,otp_expiry
 from django.utils import timezone
 from datetime import timedelta
+
 
 
 max_file_size=5 #5MB
@@ -97,6 +98,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(
         default=False
     )
+
+    is_verified = models.BooleanField(default=False)
 
     date_joined = models.DateTimeField(
         auto_now_add=True
@@ -270,7 +273,7 @@ class UpdateHero(models.Model):
 class OTP(models.Model):
     user = models.ForeignKey(CustomUser,on_delete=models.CASCADE)
     otp_value = models.CharField(max_length=6,validators=[MinLengthValidator(6)],default=generate_otp)
-    expires_at = models.DateTimeField(default=timezone.now()+timedelta(minutes = 5))
+    expires_at = models.DateTimeField(default=otp_expiry)
 
 
     @property 
