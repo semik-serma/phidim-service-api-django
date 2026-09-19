@@ -47,6 +47,7 @@ router.register(r'bookings', views.BookingViewSet, basename='bookings')
 
 router.register(r'technicians-problem-images', views.ProblemImageViewSet, basename='technicians-problem-image')
 
+router.register(r'update-heroes', views.UpdateHeroViewSet,basename='update-hero')
 
 urlpatterns = [
 
@@ -83,7 +84,7 @@ urlpatterns = [
     ),
 
     path(
-        "technicians/register/",
+        "user/register/",
         views.TechnicianRegisterAPIView.as_view(),
         name="technician-register"
     ),
@@ -105,17 +106,7 @@ urlpatterns = [
         views.TechnicianListingView.as_view(),
         name="technicians"
     )
-    ,
-    path(
-        "home-views/",
-        views.HomeViewCountView.as_view(),
-        name="home-views"
-    ),
-    path(
-        "technician/booking/",
-        views.TechnicianBookingStatusUpdate.as_view(),
-        name="technician-booking"
-    )
+    
 
 ] + router.urls
 

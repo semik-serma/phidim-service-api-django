@@ -9,6 +9,7 @@ from .models import CustomUser
 from rest_framework.views import APIView
 from django.db.models import F
 from rest_framework.exceptions import PermissionDenied
+from .tasks import send_otp_for_email_verification
 
 # Create your views here.
 
@@ -39,7 +40,7 @@ class TechnicianRegisterAPIView(CreateAPIView):
         serializer.is_valid(raise_exception=True)
 
         user = serializer.save()
-
+        send_otp_for_email_verification.delay(user.id)
         return Response(
             {
                 "message": "Technician registered successfully.",
@@ -48,6 +49,7 @@ class TechnicianRegisterAPIView(CreateAPIView):
                     "firstname": user.first_name,
                     "lastname": user.last_name,
                     "email": user.email,
+                    "role":user.role,
                 }
             },
             status=status.HTTP_201_CREATED
@@ -147,68 +149,6 @@ class BookingViewSet(viewsets.ModelViewSet):
         return BookingSerializer
 
 
-class HomeViewCountView(APIView):
-
-    def post(self, request):
-
-        stats, created = SiteStats.objects.get_or_create(
-            id=1,
-            defaults={"view_count": 0}
-        )
-
-        SiteStats.objects.filter(
-            id=stats.id
-        ).update(
-            view_count=F("view_count") + 1
-        )
-
-        stats.refresh_from_db()
-
-        serializer = SiteStatsSerializer(stats)
-
-        return Response(serializer.data)
-
-
-class UserLocationView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        latitude = request.data.get("latitude")
-        longitude = request.data.get("longitude")
-
-        if latitude is None or longitude is None:
-            return Response(
-                {"detail": "Latitude and longitude are required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        location, created = UserLocation.objects.update_or_create(
-            user=request.user,
-            defaults={
-                "latitude": latitude,
-                "longitude": longitude,
-            }
-        )
-
-        serializer = UserLocationSerializer(location)
-
-        return Response(
-            serializer.data,
-            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
-        )
-
-    def get(self, request):
-        try:
-            location = UserLocation.objects.get(user=request.user)
-        except UserLocation.DoesNotExist:
-            return Response(
-                {"detail": "Location not found."},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        serializer = UserLocationSerializer(location)
-        return Response(serializer.data)
-
 
 class ProblemImageViewSet(viewsets.ModelViewSet):
 
@@ -255,6 +195,9 @@ class TechnicianBookingStatusUpdate(APIView):
         })
 
 
+class UpdateHeroViewSet(viewsets.ModelViewSet):
+    queryset = UpdateHero.objects.all()
+    serializer_class = UpdateHeroSerializer
 
 
 

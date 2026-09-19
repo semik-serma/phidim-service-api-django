@@ -1,5 +1,5 @@
 from celery import shared_task
-from .models import Booking
+from .models import *
 from django.conf import settings
 from django.core.mail import send_mail
 
@@ -26,3 +26,18 @@ def clear_rejected_bookings():
     deleted_count, _=Booking.objects.filter(status=Booking.STATUS.REJECTED).delete()
     print(f"{deleted_count} were deleted")
     print(_)
+
+
+@shared_task
+def send_otp_for_email_verification(user_id):
+    user = CustomUser.objects.get(id=user_id)
+    otp = OTP.objects.create(user=user)
+    send_mail(
+        subject='Email_verification',
+        message=f"OTP for email_verification {otp.otp_value}",
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
+
+    print("EMAIL SENT SUCCESSFULLY")

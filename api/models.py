@@ -4,6 +4,9 @@ from django.core.validators import MinValueValidator, MaxValueValidator,MinLengt
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.core.exceptions import ValidationError
+from .utils import generate_otp
+from django.utils import timezone
+from datetime import timedelta
 
 
 max_file_size=5 #5MB
@@ -134,10 +137,6 @@ class Service(models.Model):
 
 
 class Profile(models.Model):
-    class Roles(models.TextChoices):
-        customer='c','Custumer'
-        technician='t','Technician'
-        admin='a','Admin'
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE,related_name='profile')
     rating = models.PositiveSmallIntegerField(
     default=0,
@@ -147,11 +146,10 @@ class Profile(models.Model):
     ]
 )
     address = models.CharField(max_length=50)
-    nagarita_front = models.ImageField(upload_to="nagarita/")
-    nagarita_back = models.ImageField(upload_to="nagarita/")
-    certificate = models.ImageField(upload_to="certificates/")
+    nagarita_front = models.ImageField(upload_to="nagarita/",null=True)
+    nagarita_back = models.ImageField(upload_to="nagarita/",null=True)
+    certificate = models.ImageField(upload_to="certificates/",null=True)
     phone_number = models.CharField(max_length=10)
-    role=models.CharField(max_length=1, choices=Roles, default='c')
     services=models.ManyToManyField(Service)
 
     def __str__(self):
@@ -260,3 +258,24 @@ class ProblemImage(models.Model):
         return self.booking
 
 
+class UpdateHero(models.Model):
+    text = models.CharField(max_length=40,validators=[MinLengthValidator(10)])
+    discription = models.TextField(max_length=140,validators=[MinLengthValidator(60)])
+    crouselImage = models.FileField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+
+class OTP(models.Model):
+    user = models.ForeignKey(CustomUser,on_delete=models.CASCADE)
+    otp_value = models.CharField(max_length=6,validators=[MinLengthValidator(6)],default=generate_otp)
+    expires_at = models.DateTimeField(default=timezone.now()+timedelta(minutes = 5))
+
+
+    @property 
+    def is_expired(self):
+        return self.expires_at <= timezone.now()
+
+    def __str__(self):
+        return self.otp_value

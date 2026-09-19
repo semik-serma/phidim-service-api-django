@@ -35,15 +35,20 @@ class TechnicianRegisterSerializer(serializers.Serializer):
     )
 
     address = serializers.CharField(max_length=50, min_length=10)
-    nagarita_front = serializers.ImageField()
-    nagarita_back = serializers.ImageField()
-    certificate = serializers.ImageField()
+    nagarita_front = serializers.ImageField(required=False)
+    nagarita_back = serializers.ImageField(required=False)
+    certificate = serializers.ImageField(required=False)
     phone_number = serializers.CharField(max_length=10, min_length=10)
-
+    role = serializers.CharField(max_length=1, min_length=1)
 
     def validate_email(self, value):
         if CustomUser.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("Email already exists.")
+        return value
+
+    def validate_role(self, value):
+        if value not in CustomUser.Role.values:
+             raise serializers.ValidationError("Role Does not exist.")
         return value
 
     def validate(self, attrs):
@@ -58,17 +63,16 @@ class TechnicianRegisterSerializer(serializers.Serializer):
     def create(self, validated_data):
         # Remove fields that don't belong to CustomUser
         confirm_password = validated_data.pop("confirm_password")
-
-        role = CustomUser.Role.TECHNICIAN
         address = validated_data.pop("address")
-        nagarita_front = validated_data.pop("nagarita_front")
-        nagarita_back = validated_data.pop("nagarita_back")
-        certificate = validated_data.pop("certificate")
+        # nagarita_front = validated_data.pop("nagarita_front")
+        # nagarita_back = validated_data.pop("nagarita_back")
+        # certificate = validated_data.pop("certificate")
         phone_number = validated_data.pop("phone_number")
+
 
         user = CustomUser.objects.create_user(
             email=validated_data["email"],
-            role=role,
+            role=validated_data["role"],
             password=validated_data["password"],
             first_name=validated_data["first_name"],
             last_name=validated_data["last_name"],
@@ -77,11 +81,10 @@ class TechnicianRegisterSerializer(serializers.Serializer):
         Profile.objects.create(
             user=user,
             address=address,
-            nagarita_front=nagarita_front,
-            nagarita_back=nagarita_back,
-            certificate=certificate,
+            # nagarita_front=nagarita_front,
+            # nagarita_back=nagarita_back,
+            # certificate=certificate,
             phone_number=phone_number,
-            role=role
         )
 
         return user
@@ -418,4 +421,8 @@ class TechnicianBookingUpdateSerializer(serializers.Serializer):
         send_status_email_task.delay(subject=subject,message=message,customer_email=customer_email)
 
     
-
+class UpdateHeroSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UpdateHero
+        fields = '__all__'
+        

@@ -75,3 +75,13 @@ admin.site.register(TotalLikesonComment)
 admin.site.register(CrouselImages)
 admin.site.register(Booking)
 admin.site.register(ProblemImage)
+
+@admin.register(OTP)
+class OTPAdmin(admin.ModelAdmin):
+    list_display=["user","otp_value"]
+    readonly_fields=["otp_value","expires_at"]
+    search_fields=["user__email",
+                    # "user__username",
+                    "user__first_name",
+                    "user__last_name"
+                   ]
