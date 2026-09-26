@@ -1,8 +1,10 @@
+# views.py
+from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
 from rest_framework import viewsets,permissions
 from .serializers import *
 from .models import *
 from rest_framework.generics import CreateAPIView,RetrieveAPIView
-from rest_framework.permissions import AllowAny,IsAuthenticated
+from rest_framework.permissions import AllowAny,IsAuthenticated,BasePermission
 from rest_framework import status
 from rest_framework.response import Response
 from .models import CustomUser
@@ -11,15 +13,33 @@ from django.db.models import F
 from rest_framework.exceptions import PermissionDenied
 from .tasks import send_otp_for_email_verification
 
+
 # Create your views here.
 
 
+class IsTechnicianOrReadOnly(BasePermission):
+    """
+    Anyone can read categories.
+    Only authenticated technicians can create, update, or delete.
+    """
+
+    def has_permission(self, request, view):
+        # Allow GET, HEAD, OPTIONS for everyone
+        if request.method in ("GET", "HEAD", "OPTIONS"):
+            return True
+
+        # Write operations require authentication
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Only Technician role can modify categories
+        return request.user.role == "t"
+
+
 class CategoryViewSet(viewsets.ModelViewSet):
-    """
-    A viewset for viewing and editing category instances.
-    """
-    serializer_class = CategorySerializer
     queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsTechnicianOrReadOnly]
 
 
 class ServiceViewSet(viewsets.ModelViewSet):
@@ -239,12 +259,134 @@ class EmailVerifyRequestView(APIView):
 
 
 
+class CustomTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception as e:
+            return Response({"detail": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+
+        data = serializer.validated_data
+        
+        # Create the response
+        response = Response({"message": "Login successful"}, status=status.HTTP_200_OK)
+        
+        # Set Access Token Cookie
+        response.set_cookie(
+            key='access_token',
+            value=data['access'],
+            httponly=True,       # JavaScript cannot read it
+            secure=True,         # Only sent over HTTPS (Set to False for localhost testing)
+            samesite='Lax',      # Protects against CSRF
+            max_age=60 * 60 * 24 # 1 day (Adjust based on your SIMPLE_JWT settings)
+        )
+        
+        # Set Refresh Token Cookie
+        response.set_cookie(
+            key='refresh_token',
+            value=data['refresh'],
+            httponly=True,
+            secure=True,
+            samesite='Lax',
+            max_age=60 * 60 * 24 * 7 # 7 days
+        )
+        
+        return response
 
 
 
+# --- 2. New Refresh View ---
+class CustomTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        # 1. Get the refresh token from the HttpOnly cookie
+        refresh_token = request.COOKIES.get('refresh_token')
+        
+        if not refresh_token:
+            return Response(
+                {"detail": "Refresh token not found in cookies"}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # 2. Inject the cookie token into the request data for SimpleJWT to process
+        request.data['refresh'] = refresh_token
+        
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+        except Exception as e:
+            return Response(
+                {"detail": "Invalid or expired refresh token"}, 
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        data = serializer.validated_data
+        
+        # 3. Create the response and set the new Access Token cookie
+        response = Response({"message": "Token refreshed successfully"}, status=status.HTTP_200_OK)
+        
+        response.set_cookie(
+            key='access_token',
+            value=data['access'],
+            httponly=True,
+            secure=True,
+            samesite='Lax',
+            max_age=60 * 60 * 24 
+        )
+
+        # 4. If you have ROTATE_REFRESH_TOKENS = True in settings.py, 
+        # SimpleJWT will return a new 'refresh' token in the data. 
+        # We should update the refresh cookie as well.
+        if 'refresh' in data:
+            response.set_cookie(
+                key='refresh_token',
+                value=data['refresh'],
+                httponly=True,
+                secure=True,
+                samesite='Lax',
+                max_age=60 * 60 * 24 * 7 
+            )
+            
+        return response
 
 
+# --- 3. New Logout View ---
+class LogoutView(APIView):
+    def post(self, request):
+        # Since HttpOnly cookies cannot be deleted by JavaScript, 
+        # we must instruct the browser to delete them from the server response.
+        response = Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)
+        
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        
+        return response
 
+class LogoutView(APIView):
+
+    def post(self, request):
+
+        response = Response(
+            {
+                "message": "Logged out successfully"
+            },
+            status=status.HTTP_200_OK
+        )
+
+        # Remove access token cookie
+        response.delete_cookie(
+            key="access_token",
+            path="/"
+        )
+
+        # Remove refresh token cookie
+        response.delete_cookie(
+            key="refresh_token",
+            path="/"
+        )
+
+        return response
 
 
 
