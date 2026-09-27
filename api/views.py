@@ -3,7 +3,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
 from rest_framework import viewsets,permissions
 from .serializers import *
 from .models import *
-from rest_framework.generics import CreateAPIView,RetrieveAPIView
+from rest_framework.generics import CreateAPIView,RetrieveAPIView,UpdateAPIView
 from rest_framework.permissions import AllowAny,IsAuthenticated,BasePermission
 from rest_framework import status
 from rest_framework.response import Response
@@ -389,7 +389,12 @@ class LogoutView(APIView):
         return response
 
 
+class ProfileUpdateView(UpdateAPIView):
+    serializer_class = ProfileUpdateSerializer
+    permission_classes = [IsAuthenticated]
 
+    def get_object(self):
+        return self.request.user.profile
 
 
 

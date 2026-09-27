@@ -155,6 +155,7 @@ class Profile(models.Model):
     certificate = models.ImageField(upload_to="certificates/",null=True)
     phone_number = models.CharField(max_length=10)
     services=models.ManyToManyField(Service)
+    is_kyc_verified = models.BooleanField(default=False)
 
     def __str__(self):
         return self.user.email

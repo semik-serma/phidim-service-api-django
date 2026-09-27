@@ -448,3 +448,15 @@ class OtpVerifySerializer(serializers.Serializer):
         otp.delete()
 
         return value
+
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ["address","certificate","nagarita_front","nagarita_back","phone_number"]
+
+
+
+
+

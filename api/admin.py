@@ -17,6 +17,7 @@ class CustomUserAdmin(UserAdmin):
         "role",
         "is_staff",
         "is_active",
+        "is_verified",
     )
 
     ordering = ("email",)
@@ -40,6 +41,7 @@ class CustomUserAdmin(UserAdmin):
         ("Permissions", {
             "fields": (
                 "is_active",
+                "is_verified",
                 "is_staff",
                 "is_superuser",
                 "groups",

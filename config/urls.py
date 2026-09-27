@@ -108,7 +108,8 @@ urlpatterns = [
         "otp/resend/",
         views.EmailVerifyRequestView.as_view(),
         name="otp-resend"
-    )
+    ),
+    path("profile/update/", views.ProfileUpdateView.as_view(), name="profile-update"),
 
 ] + router.urls
 
