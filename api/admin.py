@@ -77,7 +77,7 @@ admin.site.register(TotalLikesonComment)
 admin.site.register(CrouselImages)
 admin.site.register(Booking)
 admin.site.register(ProblemImage)
-
+admin.site.register(AnnouncementBanner)
 @admin.register(OTP)
 class OTPAdmin(admin.ModelAdmin):
     list_display=["user","otp_value"]

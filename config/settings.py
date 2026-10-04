@@ -141,7 +141,7 @@ AUTH_USER_MODEL = "api.CustomUser"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-          'api.authentication.CookieJWTAuthentication',
+          'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
 
@@ -195,3 +195,7 @@ CORS_ALLOWED_ORIGINS = [
      # Your production frontend domain
 ]
 ROTATE_REFRESH_TOKENS = True
+
+SIMPLE_JWT = {
+    "TOKEN_OBTAIN_SERIALIZER": "api.serializers.CustomTokenObtainPairSerializer",
+}

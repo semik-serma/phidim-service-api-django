@@ -6,17 +6,35 @@ from .models import Profile,CustomUser
 from django.core.mail import send_mail
 from django.conf import settings
 from api.tasks import send_status_email_task
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model=Category
-        fields='__all__'
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token["role"] = user.role
+        return token
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data["role"] = self.user.role
+        return data
 
 
 class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model=Service
         fields='__all__'
+
+class CategorySerializer(serializers.ModelSerializer):
+    services = ServiceSerializer(many=True)
+    class Meta:
+        model=Category
+        fields='__all__'
+
+
+
 
 
 class TechnicianRegisterSerializer(serializers.Serializer):

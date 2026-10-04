@@ -121,6 +121,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 # Create your models here.
 class Category(models.Model):
     name=models.CharField(max_length=50)
+    
     description=models.CharField(max_length=100)
     photo=models.ImageField(upload_to='categories/')
     is_active=models.BooleanField(default=True)
@@ -132,7 +133,7 @@ class Category(models.Model):
 class Service(models.Model):
     name=models.CharField(max_length=200)
     description=models.TextField()
-    category=models.ForeignKey(Category, on_delete=models.CASCADE)
+    category=models.ForeignKey(Category, on_delete=models.CASCADE,related_name='services')
     image = models.ImageField(upload_to='serivces/',null = True)
 
     def __str__(self):

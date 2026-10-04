@@ -8,22 +8,24 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework_simplejwt.views import TokenVerifyView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
 
 schema_view = get_schema_view(
-   openapi.Info(
-      title="Snippets API",
-      default_version='v1',
-      description="Test description",
-      terms_of_service="https://www.google.com/policies/terms/",
-      contact=openapi.Contact(email="contact@snippets.local"),
-      license=openapi.License(name="BSD License"),
-   ),
-   public=True,
-   permission_classes=(permissions.AllowAny,),
+    openapi.Info(
+        title="Snippets API",
+        default_version="v1",
+        description="Test description",
+        terms_of_service="https://www.google.com/policies/terms/",
+        contact=openapi.Contact(email="contact@snippets.local"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    authentication_classes=[],
+    permission_classes=(permissions.AllowAny,),
 )
 
 router = DefaultRouter()
@@ -71,7 +73,12 @@ urlpatterns = [
         name='schema-redoc'
     ),
 
-    path("login/", views.CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path(
+        'token/verify/',
+        TokenVerifyView.as_view(),
+        name='token_verify'
+    ),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("logout/",views.LogoutView.as_view(),name = "logout"),
 

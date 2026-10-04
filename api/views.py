@@ -271,7 +271,10 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         data = serializer.validated_data
         
         # Create the response
-        response = Response({"message": "Login successful"}, status=status.HTTP_200_OK)
+        response = Response(
+            {"message": "Login successful", "role": data.get("role")},
+            status=status.HTTP_200_OK,
+        )
         
         # Set Access Token Cookie
         response.set_cookie(
