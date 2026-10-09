@@ -7,6 +7,14 @@ from django.core.mail import send_mail
 from django.conf import settings
 from api.tasks import send_status_email_task
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from dj_rest_auth.serializers import UserDetailsSerializer
+
+
+class CustomUserDetailsSerializer(UserDetailsSerializer):
+    role = serializers.CharField(read_only=True)
+
+    class Meta(UserDetailsSerializer.Meta):
+        fields = (*UserDetailsSerializer.Meta.fields, "role")
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

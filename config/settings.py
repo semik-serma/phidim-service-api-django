@@ -44,6 +44,17 @@ INSTALLED_APPS = [
     'api',
     'drf_yasg',
     'django_celery_beat',
+
+    'rest_framework.authtoken',
+
+    # Allauth
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',   # Add providers you need
+    # dj-rest-auth
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
 ]
 
 MIDDLEWARE = [
@@ -55,6 +66,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+        'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -198,4 +210,30 @@ ROTATE_REFRESH_TOKENS = True
 
 SIMPLE_JWT = {
     "TOKEN_OBTAIN_SERIALIZER": "api.serializers.CustomTokenObtainPairSerializer",
+}
+
+
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*"]
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_REQUIRED = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"  # or "optional" — avoid "mandatory" for API flow
+ACCOUNT_EMAIL_VERIFICATION = "none"  # same reasoning for the base account flow
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+
+REST_AUTH = {
+    'USER_DETAILS_SERIALIZER': 'api.serializers.CustomUserDetailsSerializer',
+    'USE_JWT': True,
+    'JWT_AUTH_COOKIE': 'access',
+    'JWT_AUTH_REFRESH_COOKIE': 'refresh',
 }

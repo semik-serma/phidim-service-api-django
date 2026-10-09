@@ -117,6 +117,8 @@ urlpatterns = [
         name="otp-resend"
     ),
     path("profile/update/", views.ProfileUpdateView.as_view(), name="profile-update"),
+    path('api/auth/google/', views.GoogleLogin.as_view(), name='google_login'),
+    path('api/auth/user/', views.CurrentUserView.as_view(), name='current-user'),
 
 ] + router.urls
 

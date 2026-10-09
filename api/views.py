@@ -1,5 +1,6 @@
 # views.py
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import viewsets,permissions
 from .serializers import *
 from .models import *
@@ -12,6 +13,9 @@ from rest_framework.views import APIView
 from django.db.models import F
 from rest_framework.exceptions import PermissionDenied
 from .tasks import send_otp_for_email_verification
+from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
+from allauth.socialaccount.providers.oauth2.client import OAuth2Client
+from dj_rest_auth.registration.views import SocialLoginView
 
 
 # Create your views here.
@@ -74,6 +78,15 @@ class TechnicianRegisterAPIView(CreateAPIView):
             },
             status=status.HTTP_201_CREATED
         )
+
+
+class CurrentUserView(RetrieveAPIView):
+    serializer_class = CustomUserDetailsSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
 
 
 class UserProfileRetrieveView(RetrieveAPIView):
@@ -400,7 +413,10 @@ class ProfileUpdateView(UpdateAPIView):
         return self.request.user.profile
 
 
-
+class GoogleLogin(SocialLoginView):
+    adapter_class = GoogleOAuth2Adapter
+    callback_url = 'http://localhost:3000/auth/google/callback'
+    client_class = OAuth2Client
 
 
 
