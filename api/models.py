@@ -117,7 +117,26 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
 
+
+class ServiceArea(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+
+class ServiceAreaTechnician(models.Model):
+    technician = models.ForeignKey(CustomUser, on_delete=models.CASCADE, limit_choices_to={'role': CustomUser.Role.TECHNICIAN})
+    service_area = models.ForeignKey(ServiceArea, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('technician', 'service_area')
+
+    def __str__(self):
+        return f"{self.technician.email} - {self.service_area.name}"
     
+
+
 # Create your models here.
 class Category(models.Model):
     name=models.CharField(max_length=50)

@@ -47,11 +47,21 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 
 class ServiceViewSet(viewsets.ModelViewSet):
-    """
-    A viewset for viewing and editing service instances.
-    """
     serializer_class = ServiceSerializer
     queryset = Service.objects.all()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        service_area_id = self.request.query_params.get("service-area")
+
+        if service_area_id:
+            queryset = queryset.filter(
+                profile__user__serviceareatechnician__service_area_id=service_area_id,
+                profile__user__role=CustomUser.Role.TECHNICIAN
+            ).distinct()
+
+        return queryset
 
 
 class TechnicianRegisterAPIView(CreateAPIView):
@@ -155,20 +165,83 @@ class CrouselImagesViewSet(viewsets.ModelViewSet):
     serializer_class=CrouselImagesSerializer
 
 
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.db.models import Prefetch
+
+from .models import CustomUser, ServiceAreaTechnician
+
+
 class TechnicianListingView(APIView):
+
     def get(self, request, *args, **kwargs):
-        print(request.GET)
-        technicians = CustomUser.objects.filter(role=CustomUser.Role.TECHNICIAN)
-        category_id = request.GET.get('category')
+
+        technicians = CustomUser.objects.filter(
+            role=CustomUser.Role.TECHNICIAN
+        )
+
+        # Get query parameters
+        service_area_id = request.query_params.get("service-area")
+        service_id = request.query_params.get("service")
+        category_id = request.query_params.get("category")
+
+        # Filter by service area
+        if service_area_id:
+            if not service_area_id.isdigit():
+                return Response(
+                    {"detail": "Invalid service-area ID."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            technicians = technicians.filter(
+                serviceareatechnician__service_area_id=service_area_id
+            )
+
+        # Filter by service
+        if service_id:
+            if not service_id.isdigit():
+                return Response(
+                    {"detail": "Invalid service ID."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            technicians = technicians.filter(
+                profile__services__id=service_id
+            )
+
+        # Filter by category
         if category_id:
-            category = Category.objects.get(pk=category_id)
-            technicians = technicians.filter(profile__services__category=category)
+            if not category_id.isdigit():
+                return Response(
+                    {"detail": "Invalid category ID."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            technicians = technicians.filter(
+                profile__services__category_id=category_id
+            )
+
+        # Prevent duplicate technicians
+        technicians = technicians.distinct()
+
+        # Optimize related data
+        technicians = technicians.select_related(
+            "profile"
+        ).prefetch_related(
+            "profile__services"
+        )
 
         serializer = UserSerializer(
             instance=technicians,
             many=True
         )
-        return Response(serializer.data,status=status.HTTP_200_OK)
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK
+        )
 
 
 class BookingViewSet(viewsets.ModelViewSet):
@@ -419,8 +492,10 @@ class GoogleLogin(SocialLoginView):
     client_class = OAuth2Client
 
 
-
-
+class ServiceAreaViewSet(viewsets.ModelViewSet):
+    queryset = ServiceArea.objects.all()
+    serializer_class = ServiceAreaSerializer
+    permission_classes = [IsAuthenticated]
 
 
 

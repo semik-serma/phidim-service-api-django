@@ -87,3 +87,5 @@ class OTPAdmin(admin.ModelAdmin):
                     "user__first_name",
                     "user__last_name"
                    ]
+admin.site.register(ServiceArea)
+admin.site.register(ServiceAreaTechnician)

@@ -51,6 +51,9 @@ router.register(r'technicians-problem-images', views.ProblemImageViewSet, basena
 
 router.register(r'update-heroes', views.UpdateHeroViewSet,basename='update-hero')
 
+router.register(r'service-areas', views.ServiceAreaViewSet,basename='service-area')
+
+
 urlpatterns = [
 
     path('admin/', admin.site.urls),
