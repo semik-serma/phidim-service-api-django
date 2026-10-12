@@ -2,6 +2,7 @@
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import viewsets,permissions
+from yaml import serializer
 from .serializers import *
 from .models import *
 from rest_framework.generics import CreateAPIView,RetrieveAPIView,UpdateAPIView
@@ -141,9 +142,12 @@ class ArticleModelViewSet(viewsets.ModelViewSet):
 
 
 class CommentModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset=Comment.objects.all()
     serializer_class=CommentSerializer
 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class AnnouncementBannerViewSet(viewsets.ModelViewSet):
     queryset=AnnouncementBanner.objects.all()
@@ -151,8 +155,12 @@ class AnnouncementBannerViewSet(viewsets.ModelViewSet):
 
 
 class ReplyViewSet(viewsets.ModelViewSet):
-    queryset=Reply.objects.all()
-    serializer_class=ReplySerializer
+    queryset = Reply.objects.all()
+    serializer_class = ReplySerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class LikesOnCommentViewSet(viewsets.ModelViewSet):
@@ -244,15 +252,34 @@ class TechnicianListingView(APIView):
         )
 
 
+
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
-    permission_classes=[IsAuthenticated]
-    
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.role == CustomUser.Role.TECHNICIAN:
+            return Booking.objects.filter(technician=user)
+
+        elif user.role == CustomUser.Role.CUSTOMER:
+            return Booking.objects.filter(customer=user)
+
+        elif user.role in [
+            CustomUser.Role.ADMIN,
+            CustomUser.Role.STAFF
+        ]:
+            return Booking.objects.all()
+
+        return Booking.objects.none()
+
     def get_serializer_class(self):
         if self.action in ["list", "retrieve"]:
             return BookingsListingSerializer
 
         return BookingSerializer
+
 
 
 

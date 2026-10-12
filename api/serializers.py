@@ -163,6 +163,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = [
+            'id',
             'first_name',
             'last_name',
             'email',
@@ -196,6 +197,7 @@ class ProfileServiceSerializer(serializers.Serializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model=Comment
         fields='__all__'
@@ -214,7 +216,7 @@ class AnnouncementBannerSerializer(serializers.ModelSerializer):
     class Meta:
         model=AnnouncementBanner
         fields='__all__'
-        ready_only_fields=["created_at","updated_at"]
+        read_only_fields=["created_at","updated_at"]
 
 
 class ReplyProfileSerializer(serializers.ModelSerializer):
@@ -231,13 +233,39 @@ class ReplyUserSerializer(serializers.ModelSerializer):
 
 
 class ReplySerializer(serializers.ModelSerializer):
-    article=ArticleSerializer()
-    user=ReplyUserSerializer()
-    comment=CommentSerializer()
+    user = ReplyUserSerializer(read_only=True)
+
+    article = serializers.PrimaryKeyRelatedField(
+        queryset=Article.objects.all(),
+        required=True
+    )
+
+    comment = serializers.PrimaryKeyRelatedField(
+        queryset=Comment.objects.all(),
+        required=True
+    )
+
     class Meta:
-        model=Reply
-        fields='__all__'
-        read_only_fields=["created_at"]
+        model = Reply
+        fields = "__all__"
+        read_only_fields = ["user", "created_at"]
+
+    def validate(self, attrs):
+        article = attrs.get(
+            "article",
+            getattr(self.instance, "article", None)
+        )
+        comment = attrs.get(
+            "comment",
+            getattr(self.instance, "comment", None)
+        )
+
+        if comment and article and comment.article_id != article.id:
+            raise serializers.ValidationError({
+                "comment": "This comment does not belong to the selected article."
+            })
+
+        return attrs
 
 
 class TotalLikesOnCommentSerializer(serializers.ModelSerializer):
@@ -338,6 +366,7 @@ class BookingSerializer(serializers.ModelSerializer):
         )
 
         return booking
+
 
 
 

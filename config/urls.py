@@ -84,7 +84,8 @@ urlpatterns = [
     ),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("logout/",views.LogoutView.as_view(),name = "logout"),
-
+    path("technician/booking/",views.TechnicianBookingStatusUpdate.as_view(),name = "technician-booking-update"),
+    
     path(
         "user/register/",
         views.TechnicianRegisterAPIView.as_view(),
