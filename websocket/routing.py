@@ -1,7 +1,9 @@
-
 from django.urls import path
-from .consumers import EchoConsumer
+from .consumers import ShareLocationConsumer
 
 websocket_urlpatterns = [
-    path("ws/echo/", EchoConsumer.as_asgi()),
+    path(
+        "ws/share-location/<int:booking_id>/",
+        ShareLocationConsumer.as_asgi(),
+    ),
 ]
