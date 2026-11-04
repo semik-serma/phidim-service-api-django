@@ -159,6 +159,28 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
         event_type = content.get("type")
 
+        if event_type in ("typing.start", "typing.stop"):
+            await aclose_old_connections()
+
+            access = await self.get_booking_access(
+                self.booking_id,
+                self.user.id,
+            )
+
+            if access is None:
+                await self.close(code=4403)
+                return
+
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    "type": "chat_typing",
+                    "user_id": self.user.id,
+                    "is_typing": event_type == "typing.start",
+                },
+            )
+            return
+
         if event_type != "chat.message":
             await self.send_json({
                 "type": "error",
@@ -227,6 +249,20 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({
             "type": "chat.message",
             "data": event["data"]
+        })
+
+        # Typing indicator event handler
+    async def chat_typing(self, event):
+        if event["user_id"] == self.user.id:
+            return
+
+        await self.send_json({
+            "type": (
+                "typing.start"
+                if event["is_typing"]
+                else "typing.stop"
+            ),
+            "user_id": event["user_id"]
         })
 
     # ------------------------------

@@ -70,6 +70,7 @@ class ShareLocationConsumer(AsyncJsonWebsocketConsumer):
         }
 
     async def receive_json(self, content, **kwargs):
+        
         # Recheck authorization in case booking was
         # reassigned, cancelled, or deleted.
         access = await self.get_booking_access(
