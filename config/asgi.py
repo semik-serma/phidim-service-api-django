@@ -2,7 +2,7 @@ import os
 
 os.environ.setdefault(
     "DJANGO_SETTINGS_MODULE",
-    "config.settings"
+    "config.settings",
 )
 
 from django.core.asgi import get_asgi_application
@@ -14,12 +14,16 @@ from channels.routing import (
     URLRouter,
 )
 
-from websocket.middleware import JWTAuthMiddleware
 from channels.security.websocket import (
     AllowedHostsOriginValidator,
 )
 
-from websocket.routing import websocket_urlpatterns
+# Adjust middleware path to match your project
+from websocket.middleware import JWTAuthMiddleware
+
+# Separate routing imports
+from chat.routing import websocket_urlpatterns as chat_routes
+from websocket.routing import websocket_urlpatterns as location_routes
 
 
 application = ProtocolTypeRouter({
@@ -27,7 +31,10 @@ application = ProtocolTypeRouter({
 
     "websocket": AllowedHostsOriginValidator(
         JWTAuthMiddleware(
-            URLRouter(websocket_urlpatterns)
+            URLRouter([
+                *chat_routes,
+                *location_routes,
+            ])
         )
     ),
 })
