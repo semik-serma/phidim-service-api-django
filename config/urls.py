@@ -5,7 +5,7 @@ from drf_yasg import openapi
 from api import views
 from rest_framework.routers import DefaultRouter
 from django.contrib import admin
-from django.urls import path
+from django.urls import path,include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenVerifyView
@@ -123,6 +123,7 @@ urlpatterns = [
     path("profile/update/", views.ProfileUpdateView.as_view(), name="profile-update"),
     path('api/auth/google/', views.GoogleLogin.as_view(), name='google_login'),
     path('api/auth/user/', views.CurrentUserView.as_view(), name='current-user'),
+    path('',include('chat.urls'))
 
 ] + router.urls
 

@@ -8,6 +8,7 @@ from django.conf import settings
 from api.tasks import send_status_email_task
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from dj_rest_auth.serializers import UserDetailsSerializer
+from chat.models import ChatGroup
 
 
 class CustomUserDetailsSerializer(UserDetailsSerializer):
@@ -313,24 +314,49 @@ class ProblemImageSerializer(serializers.ModelSerializer):
 
         
 class BookingsListingSerializer(serializers.ModelSerializer):
+
     technician = CustomUserMiniSerializer(read_only=True)
     customer = CustomUserMiniSerializer(read_only=True)
-    problem_images=ProblemImageSerializer(many=True)
-    status_display=serializers.SerializerMethodField()
 
+    problem_images = ProblemImageSerializer(many=True)
 
-    class Meta:
-        model=Booking
-        fields='__all__'
-        read_only_fields=["created_at","updated_at","problem_images"]
+    status_display = serializers.SerializerMethodField()
+    chat_group = serializers.SerializerMethodField()
 
     def get_status_display(self, obj):
         return obj.get_status_display()
 
+    def get_chat_group(self, obj):
 
+        if obj.status != Booking.STATUS.CONFIRMED:
+            return None
 
-class BookingSerializer(serializers.ModelSerializer):
+        chat_group, created = ChatGroup.objects.get_or_create(
+            booking=obj
+        )
 
+        return str(chat_group.id)
+
+    class Meta:
+        model = Booking
+
+        fields = [
+            "id",
+            "status",
+            "status_display",
+            "technician",
+            "customer",
+            "problem_images",
+            "chat_group",
+            "latitude",
+            "longitude",
+            "date",
+            "created_at",
+            "updated_at",
+            "problem_details",
+        ]
+        
+class BookingSerializer(serializers.ModelSerializer):   
     class Meta:
         model = Booking
         fields = "__all__"
