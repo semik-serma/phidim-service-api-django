@@ -254,10 +254,12 @@ class TechnicianListingView(APIView):
 
 
 class BookingViewSet(viewsets.ModelViewSet):
+
     queryset = Booking.objects.all()
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+
         user = self.request.user
 
         if user.role == CustomUser.Role.TECHNICIAN:
@@ -275,12 +277,11 @@ class BookingViewSet(viewsets.ModelViewSet):
         return Booking.objects.none()
 
     def get_serializer_class(self):
+
         if self.action in ["list", "retrieve"]:
             return BookingsListingSerializer
 
         return BookingSerializer
-
-
 
 
 class ProblemImageViewSet(viewsets.ModelViewSet):

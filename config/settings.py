@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'api',
+    'chat',
     'drf_yasg',
     'django_celery_beat',
 
@@ -64,6 +65,7 @@ INSTALLED_APPS = [
     # dj-rest-auth
     'dj_rest_auth',
     'dj_rest_auth.registration',
+    "channels",
 ]
 
 MIDDLEWARE = [
@@ -96,6 +98,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = "config.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 
 # Database
