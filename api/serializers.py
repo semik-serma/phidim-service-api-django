@@ -410,27 +410,32 @@ class TechnicianBookingUpdateSerializer(serializers.Serializer):
         booking = attrs["booking"]
         new_status = attrs["status"]
 
+        # Prevent updating to the same status
         if booking.status == new_status:
             raise serializers.ValidationError(
                 "Booking is already in the same status."
             )
 
-        if booking.status in [
-            Booking.STATUS.CONFIRMED,
-            Booking.STATUS.REJECTED,
-        ]:
-            raise serializers.ValidationError(
-                "A confirmed or rejected booking cannot be updated."
-            )
-
-        allowed_statuses = {
-            Booking.STATUS.CONFIRMED,
-            Booking.STATUS.REJECTED,
+        # Define allowed status transitions
+        allowed_transitions = {
+            Booking.STATUS.PENDING: {
+                Booking.STATUS.CONFIRMED,
+                Booking.STATUS.REJECTED,
+            },
+            Booking.STATUS.CONFIRMED: {
+                Booking.STATUS.SERVED,
+            },
         }
+
+        allowed_statuses = allowed_transitions.get(
+            booking.status, set()
+        )
 
         if new_status not in allowed_statuses:
             raise serializers.ValidationError(
-                "Booking can only be updated to confirmed or rejected."
+                f"Cannot change booking status from "
+                f"'{booking.get_status_display()}' to "
+                f"'{new_status}'."
             )
 
         return attrs
@@ -445,18 +450,18 @@ class TechnicianBookingUpdateSerializer(serializers.Serializer):
         print("===================================")
         print("BOOKING UPDATED")
         print("Booking ID:", booking.id)
-        print("Status:", booking.status)
+        print("Status:", booking.get_status_display())
         print("Customer:", booking.customer)
-        print("Customer email:", booking.customer.email if booking.customer else None)
+        print("Customer email:",
+              booking.customer.email if booking.customer else None)
         print("Technician email:", booking.technician.email)
         print("===================================")
 
         self.send_status_email(booking)
-        
 
         return booking
 
-    def send_status_email(self,booking):
+    def send_status_email(self, booking):
         if not booking.customer:
             print("EMAIL NOT SENT: customer is None")
             return
@@ -493,6 +498,18 @@ class TechnicianBookingUpdateSerializer(serializers.Serializer):
                 "Please try booking another technician."
             )
 
+        elif booking.status == Booking.STATUS.SERVED:
+
+            subject = "Your booking service has been completed"
+
+            message = (
+                f"Your booking #{booking.id} has been successfully served "
+                f"by technician {booking.technician.email}.\n\n"
+                f"Problem details: {booking.problem_details}\n"
+                f"Booking date: {booking.date}\n\n"
+                "Thank you for using our service."
+            )
+
         else:
             print("EMAIL NOT SENT: unsupported status")
             return
@@ -500,9 +517,12 @@ class TechnicianBookingUpdateSerializer(serializers.Serializer):
         print("Subject:", subject)
         print("From:", settings.DEFAULT_FROM_EMAIL)
         print("To:", customer_email)
-        send_status_email_task.delay(subject=subject,message=message,customer_email=customer_email)
 
-    
+        send_status_email_task.delay(
+            subject=subject,
+            message=message,
+            customer_email=customer_email
+        )
 class UpdateHeroSerializer(serializers.ModelSerializer):
     class Meta:
         model = UpdateHero

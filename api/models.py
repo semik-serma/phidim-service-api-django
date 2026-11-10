@@ -239,6 +239,8 @@ class Booking(models.Model):
         PENDING = 'p','pending'
         CONFIRMED = 'c','confirmed'
         REJECTED = 'r','rejected'
+        SERVED = 's','served'
+
 
     status = models.CharField(max_length=1,choices=STATUS,default=STATUS.PENDING)
     technician = models.ForeignKey(CustomUser,on_delete=models.CASCADE,related_name='bookings')

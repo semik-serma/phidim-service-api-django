@@ -28,6 +28,8 @@ class ChatGroup(models.Model):
         related_name="chatgroup"
     )
 
+    is_active = models.BooleanField(default = True)
+
     def __str__(self):
         return self.name or str(self.id)
 
@@ -55,6 +57,9 @@ class ChatMessage(models.Model):
         auto_now=True
     )
 
+    is_archived = models.BooleanField(default = False)
+
+    archived_at = models.DateTimeField(null = True)
     class Meta:
         ordering = ["created_at", "id"]
 
