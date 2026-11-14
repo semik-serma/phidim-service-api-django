@@ -10,7 +10,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def connect(self):
         self.user = self.scope["user"]
-
+        
         # 1. Authentication
         if not self.user.is_authenticated:
             await self.close(code=4401)

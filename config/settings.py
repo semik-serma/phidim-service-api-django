@@ -30,10 +30,12 @@ ALLOWED_HOSTS = [
     'cp186v31-3000.inc1.devtunnels.ms',
     'localhost',
     '127.0.0.1',
+    'amplifier-mongoose-greasily.ngrok-free.dev'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://cp186v31-3000.inc1.devtunnels.ms',
+    'https://amplifier-mongoose-greasily.ngrok-free.dev'
 ]
 
 
@@ -52,6 +54,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'api',
     'chat',
+    'videocall',
     'drf_yasg',
     'django_celery_beat',
 

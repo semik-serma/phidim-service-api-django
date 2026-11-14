@@ -1,4 +1,7 @@
 # views.py
+from django.contrib.admin import action
+from django.contrib.admin import action as admin_action
+from rest_framework.decorators import action
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework import viewsets,permissions
@@ -6,7 +9,7 @@ from yaml import serializer
 from .serializers import *
 from .models import *
 from rest_framework.generics import CreateAPIView,RetrieveAPIView,UpdateAPIView
-from rest_framework.permissions import AllowAny,IsAuthenticated,BasePermission
+from rest_framework.permissions import AllowAny,IsAuthenticated,BasePermission,IsAuthenticatedOrReadOnly
 from rest_framework import status
 from rest_framework.response import Response
 from .models import CustomUser
@@ -137,41 +140,48 @@ class ProfileServiceAPIView(APIView):
 
 
 class ArticleModelViewSet(viewsets.ModelViewSet):
-    queryset=Article.objects.all()
-    serializer_class=ArticleSerializer
+    queryset = Article.objects.prefetch_related('comments__user')
+    serializer_class = ArticleSerializer
+
+    @action(
+        detail=True,
+        methods=['post'],
+        url_path='comments',
+        permission_classes=[IsAuthenticated]
+    )
+    def add_comment(self, request, pk=None):
+        article = self.get_object()
+
+        serializer = CommentSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        serializer.save(
+            article=article,
+            user=request.user
+        )
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+
+from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
+
+from .models import Comment
+from .serializers import CommentSerializer
 
 
 class CommentModelViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    queryset=Comment.objects.all()
-    serializer_class=CommentSerializer
+    queryset = Comment.objects.select_related(
+        'article', 'user'
+    )
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
-class AnnouncementBannerViewSet(viewsets.ModelViewSet):
-    queryset=AnnouncementBanner.objects.all()
-    serializer_class=AnnouncementBannerSerializer
-
-
-class ReplyViewSet(viewsets.ModelViewSet):
-    queryset = Reply.objects.all()
-    serializer_class = ReplySerializer
-    permission_classes = [IsAuthenticated]
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-
-class LikesOnCommentViewSet(viewsets.ModelViewSet):
-    queryset=TotalLikesonComment.objects.all()
-    serializer_class=TotalLikesOnCommentSerializer
-
-
-class CrouselImagesViewSet(viewsets.ModelViewSet):
-    queryset=CrouselImages.objects.all()
-    serializer_class=CrouselImagesSerializer
-
 
 
 from rest_framework.views import APIView
@@ -328,10 +338,9 @@ class TechnicianBookingStatusUpdate(APIView):
             "status": booking.status,
         })
 
-
-class UpdateHeroViewSet(viewsets.ModelViewSet):
-    queryset = UpdateHero.objects.all()
-    serializer_class = UpdateHeroSerializer
+class HeroBannerViewSet(viewsets.ModelViewSet):
+    queryset = HeroBanner.objects.all()
+    serializer_class = HeroBannerSerializer
 
 
 class OtpVerifyView(APIView):

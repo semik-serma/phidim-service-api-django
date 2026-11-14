@@ -72,12 +72,9 @@ admin.site.register(Service)
 admin.site.register(Profile)
 admin.site.register(Article)
 admin.site.register(Comment)
-admin.site.register(Reply)
-admin.site.register(TotalLikesonComment)
-admin.site.register(CrouselImages)
 admin.site.register(Booking)
 admin.site.register(ProblemImage)
-admin.site.register(AnnouncementBanner)
+admin.site.register(HeroBanner)
 @admin.register(OTP)
 class OTPAdmin(admin.ModelAdmin):
     list_display=["user","otp_value"]

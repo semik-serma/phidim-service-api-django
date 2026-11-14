@@ -23,7 +23,8 @@ from websocket.middleware import JWTAuthMiddleware
 
 # Separate routing imports
 from chat.routing import websocket_urlpatterns as chat_routes
-from websocket.routing import websocket_urlpatterns as location_routes
+from websocket.routing import websocket_urlpatterns as location_routes 
+from videocall.routing import websocket_urlpatterns as videocall_routes
 
 
 application = ProtocolTypeRouter({
@@ -34,6 +35,7 @@ application = ProtocolTypeRouter({
             URLRouter([
                 *chat_routes,
                 *location_routes,
+                *videocall_routes,
             ])
         )
     ),

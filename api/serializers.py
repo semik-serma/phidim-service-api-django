@@ -197,12 +197,31 @@ class ProfileServiceSerializer(serializers.Serializer):
 
 
 
+from rest_framework import serializers
+from .models import Article, Comment
+
+
 class CommentSerializer(serializers.ModelSerializer):
-    
+    user = serializers.StringRelatedField(read_only=True)
+
+    article = serializers.PrimaryKeyRelatedField(
+        queryset=Article.objects.all()
+    )
+
     class Meta:
-        model=Comment
-        fields='__all__'
-        read_only_fields=["created_at","updated_at"]
+        model = Comment
+        fields = [
+            'id',
+            'article',
+            'user',
+            'content',
+            'created_at'
+        ]
+        read_only_fields = [
+            'id',
+            'user',
+            'created_at'
+        ]
 
 
 class ArticleSerializer(serializers.ModelSerializer):
@@ -213,11 +232,7 @@ class ArticleSerializer(serializers.ModelSerializer):
         read_only_fields=["created_at","updated_at"]
 
 
-class AnnouncementBannerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=AnnouncementBanner
-        fields='__all__'
-        read_only_fields=["created_at","updated_at"]
+
 
 
 class ReplyProfileSerializer(serializers.ModelSerializer):
@@ -231,57 +246,6 @@ class ReplyUserSerializer(serializers.ModelSerializer):
     class Meta:
         model=CustomUser
         fields=['id','first_name','last_name','email','profile']
-
-
-class ReplySerializer(serializers.ModelSerializer):
-    user = ReplyUserSerializer(read_only=True)
-
-    article = serializers.PrimaryKeyRelatedField(
-        queryset=Article.objects.all(),
-        required=True
-    )
-
-    comment = serializers.PrimaryKeyRelatedField(
-        queryset=Comment.objects.all(),
-        required=True
-    )
-
-    class Meta:
-        model = Reply
-        fields = "__all__"
-        read_only_fields = ["user", "created_at"]
-
-    def validate(self, attrs):
-        article = attrs.get(
-            "article",
-            getattr(self.instance, "article", None)
-        )
-        comment = attrs.get(
-            "comment",
-            getattr(self.instance, "comment", None)
-        )
-
-        if comment and article and comment.article_id != article.id:
-            raise serializers.ValidationError({
-                "comment": "This comment does not belong to the selected article."
-            })
-
-        return attrs
-
-
-class TotalLikesOnCommentSerializer(serializers.ModelSerializer):
-    comment = CommentSerializer()
-    class Meta:
-        model = TotalLikesonComment
-        fields = "__all__"
-        read_only_fields = ["created_at", "likes"]
-
-
-class CrouselImagesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=CrouselImages
-        fields='__all__'
-        ready_only_fields=["created_at","updated_at"]
 
 
 class CustomUserMiniSerializer(serializers.ModelSerializer):
@@ -356,7 +320,8 @@ class BookingsListingSerializer(serializers.ModelSerializer):
             "problem_details",
         ]
         
-class BookingSerializer(serializers.ModelSerializer):   
+class BookingSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Booking
         fields = "__all__"
@@ -367,7 +332,6 @@ class BookingSerializer(serializers.ModelSerializer):
         ]
 
     def validate_technician(self, technician):
-        # Make sure the selected user is actually a technician
         if technician.role != CustomUser.Role.TECHNICIAN:
             raise serializers.ValidationError(
                 "The selected user is not a technician."
@@ -376,24 +340,43 @@ class BookingSerializer(serializers.ModelSerializer):
         return technician
 
     def create(self, validated_data):
-        # Get the logged-in user
         customer = self.context["request"].user
 
-        # Make sure the logged-in user is actually a customer
         if customer.role != CustomUser.Role.CUSTOMER:
             raise serializers.ValidationError(
                 "Only a customer can create a booking."
             )
 
-        # Create booking with logged-in user as customer
-        booking = Booking.objects.create(
+        if not customer.is_verified:
+            raise serializers.ValidationError(
+                "Your account must be verified before creating a booking."
+            )
+
+        return Booking.objects.create(
             customer=customer,
             **validated_data
         )
 
-        return booking
+def create(self, validated_data):
+    customer = self.context["request"].user
 
+    if customer.role != CustomUser.Role.CUSTOMER:
+        raise serializers.ValidationError(
+            "Only a customer can create a booking."
+        )
 
+    # Check if the customer is verified
+    if not customer.is_verified:
+        raise serializers.ValidationError(
+            "Your account must be verified before creating a booking."
+        )
+
+    booking = Booking.objects.create(
+        customer=customer,
+        **validated_data
+    )
+
+    return booking
 
 
 # class BookingListingSerializer(serializers.ModelSerializer):
@@ -523,10 +506,34 @@ class TechnicianBookingUpdateSerializer(serializers.Serializer):
             message=message,
             customer_email=customer_email
         )
-class UpdateHeroSerializer(serializers.ModelSerializer):
+
+
+from rest_framework import serializers
+from .models import HeroBanner, CustomUser
+
+
+class HeroBannerSerializer(serializers.ModelSerializer):
+
     class Meta:
-        model = UpdateHero
-        fields = '__all__'
+        model = HeroBanner
+        fields = "__all__"
+        read_only_fields = ["created_at", "updated_at"]
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+
+        if request is None or not request.user.is_authenticated:
+            raise serializers.ValidationError(
+                "Authentication is required."
+            )
+
+        if request.user.role != CustomUser.Role.ADMIN:
+            raise serializers.ValidationError(
+                "Only admin users can create or update hero banners."
+            )
+
+        return attrs
+
         
 
 class OtpVerifySerializer(serializers.Serializer):

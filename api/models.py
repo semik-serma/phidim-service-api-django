@@ -1,9 +1,9 @@
-from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator,MinLengthValidator, MaxLengthValidator
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.core.exceptions import ValidationError
+from django.conf import settings
 from .utils import generate_otp,otp_expiry
 from django.utils import timezone
 from datetime import timedelta
@@ -188,49 +188,21 @@ class Article(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
 
-
 class Comment(models.Model):
-    user=models.ForeignKey(CustomUser,on_delete=models.CASCADE)
-    article=models.ForeignKey(Article,on_delete=models.CASCADE,related_name='comments')
-    text=models.TextField()
-    created_at=models.DateTimeField(auto_now_add=True)
-    updated_at=models.DateTimeField(auto_now=True)
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE
+    )
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
-
-class AnnouncementBanner(models.Model):
-        text = models.CharField(
-        max_length=150,
-        validators=[
-            MinLengthValidator(10),
-            MaxLengthValidator(150),
-        ],
-        help_text="Announcement must be between 10 and 150 characters."
-        )
-        created_at=models.DateTimeField(auto_now_add=True)
-        updated_at = models.DateTimeField(auto_now=True)
-
-
-class Reply(models.Model):
-    article=models.ForeignKey(Article,on_delete=models.CASCADE)
-    user=models.ForeignKey(CustomUser,on_delete=models.CASCADE)
-    comment=models.ForeignKey(Comment,on_delete=models.CASCADE)
-    reply=models.TextField()
-    created_at=models.DateTimeField(auto_now_add=True)
-
-
-class TotalLikesonComment(models.Model):
-    article=models.ForeignKey(Article,on_delete=models.CASCADE)
-    comment=models.ForeignKey(Comment,on_delete=models.CASCADE)
-    likes = models.PositiveIntegerField(default=0,editable=False)
-    created_at=models.DateTimeField(auto_now_add=True)
-
-
-class CrouselImages(models.Model):
-    img1=models.ImageField(upload_to='crousel-images/')
-    img2=models.ImageField(upload_to='crousel-images/')
-    img3=models.ImageField(upload_to='crousel-images/')
-    created_at=models.DateTimeField(auto_now_add=True)
-    updated_at=models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return f"{self.user} - {self.article.title}"
 
 
 class Booking(models.Model):
@@ -285,14 +257,14 @@ class ProblemImage(models.Model):
         return self.booking
 
 
-class UpdateHero(models.Model):
-    text = models.CharField(max_length=40,validators=[MinLengthValidator(10)])
-    discription = models.TextField(max_length=140,validators=[MinLengthValidator(60)])
-    crouselImage = models.FileField()
-    created_at = models.DateTimeField(auto_now_add=True)
+class HeroBanner(models.Model):
+    title = models.CharField(max_length=70,validators=[MinLengthValidator(30)])
+    discription = models.TextField(max_length=230,validators=[MinLengthValidator(50)])
+    first_image = models.ImageField(null=True,upload_to='crousel-images')
+    second_image = models.ImageField(null=True,upload_to='crousel-images')
+    third_image = models.ImageField(null=True,upload_to='crousel-images')
+    created_at = models.DateTimeField(auto_now_add=True),
     updated_at = models.DateTimeField(auto_now=True)
-
-
 
 class OTP(models.Model):
     user = models.ForeignKey(CustomUser,on_delete=models.CASCADE)

@@ -35,23 +35,15 @@ router.register(r'services', views.ServiceViewSet, basename='service')
 
 router.register(r'articles', views.ArticleModelViewSet, basename='article')
 
-router.register(r'comments', views.CommentModelViewSet, basename='comment')
-
-router.register(r'announcements', views.AnnouncementBannerViewSet, basename='announcement')
-
-router.register(r'replies', views.ReplyViewSet, basename='reply')
-
-router.register(r'likes', views.LikesOnCommentViewSet, basename='like')
-
-router.register(r'crousel-images', views.CrouselImagesViewSet, basename='crousel-image')
-
 router.register(r'bookings', views.BookingViewSet, basename='bookings')
 
 router.register(r'technicians-problem-images', views.ProblemImageViewSet, basename='technicians-problem-image')
 
-router.register(r'update-heroes', views.UpdateHeroViewSet,basename='update-hero')
-
 router.register(r'service-areas', views.ServiceAreaViewSet,basename='service-area')
+
+router.register(r'comments', views.CommentModelViewSet,basename='comment')
+
+router.register(r'hero-banners', views.HeroBannerViewSet,basename='hero-banner')
 
 
 urlpatterns = [
@@ -123,7 +115,8 @@ urlpatterns = [
     path("profile/update/", views.ProfileUpdateView.as_view(), name="profile-update"),
     path('api/auth/google/', views.GoogleLogin.as_view(), name='google_login'),
     path('api/auth/user/', views.CurrentUserView.as_view(), name='current-user'),
-    path('',include('chat.urls'))
+    path('',include('chat.urls')),
+    path('',include('videocall.urls'))
 
 ] + router.urls
 

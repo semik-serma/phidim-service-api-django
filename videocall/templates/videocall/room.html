@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Room: {{ room_name }}</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        background: #0f172a;
+        color: #f1f5f9;
+        text-align: center;
+      }
+      h2 {
+        margin: 1rem 0 0.25rem;
+      }
+      #status {
+        color: #94a3b8;
+        margin-bottom: 1rem;
+      }
+      .videos {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
+        padding: 1rem;
+      }
+      video {
+        width: 420px;
+        max-width: 100%;
+        background: #000;
+        border-radius: 12px;
+      }
+      .label {
+        font-size: 0.85rem;
+        color: #94a3b8;
+        margin-top: 0.25rem;
+      }
+
+      .controls {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        padding-bottom: 2rem;
+      }
+      .controls button {
+        padding: 0.75rem 1.25rem;
+        border: none;
+        border-radius: 999px;
+        font-size: 1rem;
+        cursor: pointer;
+        background: #334155;
+        color: #f1f5f9;
+      }
+      .controls button:hover {
+        background: #475569;
+      }
+      .controls button.off {
+        background: #dc2626;
+      }
+      .controls button.hangup {
+        background: #dc2626;
+      }
+      .controls button.hangup:hover {
+        background: #b91c1c;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Room: {{ room_name }}</h2>
+    <div id="status">Not connected yet</div>
+
+    <div class="videos">
+      <div>
+        <video id="localVideo" autoplay playsinline muted></video>
+        <div class="label">You</div>
+      </div>
+      <div>
+        <video id="remoteVideo" autoplay playsinline></video>
+        <div class="label">Remote</div>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="muteBtn">Mute</button>
+      <button id="cameraBtn">Camera Off</button>
+      <button id="hangupBtn" class="hangup">Hang Up</button>
+    </div>
+
+    <script>
+      const roomName = "{{ room_name }}";
+      const localVideo = document.getElementById("localVideo");
+      const remoteVideo = document.getElementById("remoteVideo");
+      const statusEl = document.getElementById("status");
+
+      const rtcConfig = {
+        iceServers: [
+          // Try direct peer-to-peer connection first
+          {
+            urls: "stun:stun.l.google.com:19302",
+          },
+          {
+            urls: "stun:stun.relay.metered.ca:80",
+          },
+          {
+            urls: "turn:global.relay.metered.ca:80",
+            username: "dummy-username",
+            credential: "dummy-password",
+          },
+          {
+            urls: "turn:global.relay.metered.ca:80?transport=tcp",
+            username: "dummy-username",
+            credential: "dummy-password",
+          },
+          {
+            urls: "turn:global.relay.metered.ca:443",
+            username: "dummy-username",
+            credential: "dummy-password",
+          },
+          {
+            urls: "turns:global.relay.metered.ca:443?transport=tcp",
+            username: "dummy-username",
+            credential: "dummy-password",
+          },
+        ],
+        iceTransportPolicy: "all", // TEST ONLY: forces all media through TURN
+      };
+
+      let localStream = null;
+      let pc = null;
+      let ws = null;
+      let pendingCandidates = []; // ICE candidates that arrive before the remote description
+
+      const setStatus = (text) => (statusEl.textContent = text);
+
+      // ---------- 1. Camera + mic, then connect signaling ----------
+      async function start() {
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+          });
+        } catch (err) {
+          setStatus("Camera/mic error: " + err.message);
+          return;
+        }
+        localVideo.srcObject = localStream;
+        connectSignaling();
+      }
+
+      // ---------- 2. Signaling (WebSocket) ----------
+      function connectSignaling() {
+        const scheme = location.protocol === "https:" ? "wss" : "ws";
+        ws = new WebSocket(`${scheme}://${location.host}/ws/call/${roomName}/`);
+
+        ws.onopen = () =>
+          setStatus("Connected to server. Waiting for the other person...");
+        ws.onclose = (e) => {
+          if (e.code === 4001) setStatus("Room is full (1-1 calls only).");
+          else setStatus("Disconnected from server.");
+        };
+        ws.onmessage = async (event) => {
+          const msg = JSON.parse(event.data);
+          await handleSignal(msg);
+        };
+      }
+
+      function sendSignal(data) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify(data));
+        }
+      }
+
+      async function handleSignal(msg) {
+        switch (msg.type) {
+          case "joined":
+            setStatus(
+              msg.count === 1
+                ? "Waiting for the other person to join..."
+                : "Joined. Waiting for the call to start...",
+            );
+            break;
+
+          case "peer-joined":
+            // Someone arrived after us -> we create the offer
+            setStatus("Peer joined. Calling...");
+            createPeerConnection();
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            sendSignal({ type: "offer", sdp: pc.localDescription });
+            break;
+
+          case "offer":
+            createPeerConnection();
+            await pc.setRemoteDescription(msg.sdp);
+            await flushPendingCandidates();
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            sendSignal({ type: "answer", sdp: pc.localDescription });
+            break;
+
+          case "answer":
+            await pc.setRemoteDescription(msg.sdp);
+            await flushPendingCandidates();
+            break;
+
+          case "ice-candidate":
+            if (pc && pc.remoteDescription) {
+              await pc.addIceCandidate(msg.candidate);
+            } else {
+              pendingCandidates.push(msg.candidate); // too early, queue it
+            }
+            break;
+
+          case "peer-left":
+            setStatus("The other person left. Waiting for someone new...");
+            closePeerConnection();
+            break;
+        }
+      }
+
+      // ---------- 3. RTCPeerConnection ----------
+      function createPeerConnection() {
+        closePeerConnection(); // start clean
+        pc = new RTCPeerConnection(rtcConfig);
+
+        // Send our camera/mic to the peer
+        localStream
+          .getTracks()
+          .forEach((track) => pc.addTrack(track, localStream));
+
+        // Show the peer's video when it arrives
+        pc.ontrack = (event) => {
+          remoteVideo.srcObject = event.streams[0];
+        };
+
+        // Send each discovered network route to the peer via the server
+        pc.onicecandidate = (event) => {
+          if (event.candidate) {
+            sendSignal({ type: "ice-candidate", candidate: event.candidate });
+          }
+        };
+
+        pc.onconnectionstatechange = () => {
+          if (pc.connectionState === "connected") setStatus("Connected!");
+          if (pc.connectionState === "failed")
+            setStatus("Connection failed (may need a TURN server).");
+        };
+      }
+
+      async function flushPendingCandidates() {
+        for (const c of pendingCandidates) {
+          await pc.addIceCandidate(c);
+        }
+        pendingCandidates = [];
+      }
+
+      function closePeerConnection() {
+        if (pc) {
+          pc.close();
+          pc = null;
+        }
+        pendingCandidates = [];
+        remoteVideo.srcObject = null;
+      }
+
+      window.addEventListener("beforeunload", () => {
+        if (ws) ws.close();
+      });
+
+      // ---------- 4. Controls ----------
+      const muteBtn = document.getElementById("muteBtn");
+      const cameraBtn = document.getElementById("cameraBtn");
+      const hangupBtn = document.getElementById("hangupBtn");
+
+      muteBtn.onclick = () => {
+        if (!localStream) return;
+        const track = localStream.getAudioTracks()[0];
+        if (!track) return;
+        track.enabled = !track.enabled;
+        muteBtn.textContent = track.enabled ? "Mute" : "Unmute";
+        muteBtn.classList.toggle("off", !track.enabled);
+      };
+
+      cameraBtn.onclick = () => {
+        if (!localStream) return;
+        const track = localStream.getVideoTracks()[0];
+        if (!track) return;
+        track.enabled = !track.enabled;
+        cameraBtn.textContent = track.enabled ? "Camera Off" : "Camera On";
+        cameraBtn.classList.toggle("off", !track.enabled);
+      };
+
+      hangupBtn.onclick = () => {
+        closePeerConnection();
+        if (localStream) {
+          localStream.getTracks().forEach((t) => t.stop()); // turns off the camera light
+          localStream = null;
+        }
+        localVideo.srcObject = null;
+        if (ws) ws.close();
+        setStatus("Call ended.");
+        window.location.href = "/";
+      };
+
+      start();
+    </script>
+  </body>
+</html>
